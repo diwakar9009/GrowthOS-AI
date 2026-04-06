@@ -1,0 +1,174 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: /users/{userId}
+    // Document ID: userId (Firebase Auth UID)
+    // Fields:
+    //   - uid: string (required) - Firebase Auth UID
+    //   - email: string (required, email format)
+    //   - displayName: string
+    //   - photoURL: string (url format)
+    //   - niche: string
+    //   - platform: string (enum: instagram, youtube, both)
+    //   - streak: number (required)
+    //   - lastActive: string (ISO 8601)
+    //   - points: number (required)
+    //   - createdAt: string (ISO 8601, required)
+    //
+    // Collection: /users/{userId}/tasks/{taskId}
+    // Document ID: taskId (auto-generated)
+    // Fields:
+    //   - userId: string (required)
+    //   - title: string (required)
+    //   - description: string
+    //   - type: string (enum: caption, trend, suggestion, tool, required)
+    //   - content: string (JSON string)
+    //   - createdAt: string (ISO 8601, required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function hasOnlyAllowedFields(data, allowedFields) {
+      return data.keys().hasOnly(allowedFields);
+    }
+
+    function hasRequiredFields(data, requiredFields) {
+      return data.keys().hasAll(requiredFields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(data, ['uid', 'email', 'streak', 'points', 'createdAt']) &&
+             hasOnlyAllowedFields(data, ['uid', 'email', 'displayName', 'photoURL', 'niche', 'platform', 'streak', 'lastActive', 'points', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.streak is number && data.streak >= 0 &&
+             data.points is number && data.points >= 0 &&
+             isValidDateString(data.createdAt) &&
+             (data.platform == null || data.platform in ['instagram', 'youtube', 'both']);
+    }
+
+    function isValidTask(data, userId) {
+      return hasRequiredFields(data, ['userId', 'title', 'type', 'createdAt']) &&
+             hasOnlyAllowedFields(data, ['userId', 'clientId', 'title', 'description', 'type', 'content', 'createdAt']) &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.type in ['caption', 'trend', 'suggestion', 'tool'] &&
+             isValidDateString(data.createdAt);
+    }
+
+    function isValidClient(data, userId) {
+      return hasRequiredFields(data, ['userId', 'name', 'status', 'createdAt']) &&
+             hasOnlyAllowedFields(data, ['userId', 'name', 'email', 'niche', 'brandVoice', 'status', 'progress', 'createdAt']) &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.status in ['active', 'on-hold', 'completed'] &&
+             isValidDateString(data.createdAt) &&
+             (data.email == null || isValidEmail(data.email));
+    }
+
+    function isValidCalendarEvent(data, userId) {
+      return hasRequiredFields(data, ['userId', 'clientId', 'title', 'date', 'status']) &&
+             hasOnlyAllowedFields(data, ['userId', 'clientId', 'title', 'platform', 'date', 'status']) &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.status in ['planned', 'scheduled', 'posted'];
+    }
+
+    function isValidProject(data, userId) {
+      return hasRequiredFields(data, ['userId', 'title', 'status', 'createdAt']) &&
+             hasOnlyAllowedFields(data, ['userId', 'clientId', 'title', 'description', 'status', 'priority', 'dueDate', 'createdAt']) &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.status in ['todo', 'in-progress', 'review', 'done'] &&
+             (data.priority == null || data.priority in ['low', 'medium', 'high']) &&
+             isValidDateString(data.createdAt);
+    }
+
+    function isValidAsset(data, userId) {
+      return hasRequiredFields(data, ['userId', 'name', 'type', 'url', 'createdAt']) &&
+             hasOnlyAllowedFields(data, ['userId', 'clientId', 'name', 'type', 'url', 'createdAt']) &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.type in ['image', 'video', 'doc', 'link'] &&
+             isValidDateString(data.createdAt);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+
+      match /tasks/{taskId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidTask(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidTask(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+      }
+
+      match /clients/{clientId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidClient(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidClient(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+      }
+
+      match /calendar/{eventId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidCalendarEvent(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidCalendarEvent(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+      }
+
+      match /projects/{projectId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidProject(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidProject(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+      }
+
+      match /assets/{assetId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidAsset(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidAsset(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

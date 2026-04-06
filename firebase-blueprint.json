@@ -1,0 +1,123 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user settings, preferences, and growth stats.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "niche": { "type": "string", "description": "User's marketing niche" },
+        "platform": { "type": "string", "enum": ["instagram", "youtube", "both"] },
+        "streak": { "type": "integer", "description": "Current daily streak" },
+        "lastActive": { "type": "string", "format": "date-time" },
+        "points": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "streak", "points", "createdAt"]
+    },
+    "MarketingTask": {
+      "title": "Marketing Task",
+      "description": "A record of a marketing task or AI generation.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "clientId": { "type": "string", "description": "Optional link to a Client document" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["caption", "trend", "suggestion", "tool"] },
+        "content": { "type": "string", "description": "JSON string of the generated content" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "type", "createdAt"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Stores information about a marketing client.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "niche": { "type": "string" },
+        "brandVoice": { "type": "string", "description": "The unique tone/personality of the brand" },
+        "status": { "type": "string", "enum": ["active", "on-hold", "completed"] },
+        "progress": { "type": "integer", "description": "Campaign progress percentage" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "status", "createdAt"]
+    },
+    "CalendarEvent": {
+      "title": "Calendar Event",
+      "description": "A scheduled post or marketing event.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "title": { "type": "string" },
+        "platform": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["planned", "scheduled", "posted"] }
+      },
+      "required": ["userId", "clientId", "title", "date", "status"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "A campaign or project with a status board.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["todo", "in-progress", "review", "done"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "dueDate": { "type": "string", "format": "date" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "status", "createdAt"]
+    },
+    "Asset": {
+      "title": "Asset",
+      "description": "A brand asset like a logo, image link, or document.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["image", "video", "doc", "link"] },
+        "url": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "type", "url", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": "MarketingTask",
+      "description": "User's marketing tasks and history"
+    },
+    "/users/{userId}/clients/{clientId}": {
+      "schema": "Client",
+      "description": "User's client management"
+    },
+    "/users/{userId}/calendar/{eventId}": {
+      "schema": "CalendarEvent",
+      "description": "User's content calendar"
+    },
+    "/users/{userId}/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Campaign project board tasks"
+    },
+    "/users/{userId}/assets/{assetId}": {
+      "schema": "Asset",
+      "description": "Brand assets and media library"
+    }
+  }
+}
