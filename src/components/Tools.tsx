@@ -43,7 +43,17 @@ import {
   FileSpreadsheet,
   PhoneCall,
   ExternalLink,
-  HeartHandshake
+  Newspaper,
+  ShieldCheck,
+  Clock,
+  Heart,
+  HeartHandshake,
+  FileBarChart,
+  Library,
+  ClipboardCheck,
+  Zap as ZapIcon,
+  FilePieChart,
+  UserPlus
 } from "lucide-react";
 import { GoogleGenAI } from "@google/genai";
 import { useAuth } from "@/lib/AuthContext";
@@ -52,7 +62,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "motion/react";
 
-type ToolType = 'ads' | 'seo' | 'email' | 'utm' | 'downloader' | 'compressor' | 'competitor' | 'influencer' | 'hashtag' | 'strategy' | 'roi' | 'abtest' | 'brand-voice' | 'product-desc' | 'bio-gen' | 'video-script' | 'review-reply' | 'social-listening' | 'lead-magnet' | 'email-sequence' | 'landing-page' | 'campaign-brief' | 'social-reply' | 'content-calendar' | 'ad-budget' | 'lead-scorer' | 'sales-script' | 'crisis-comms' | 'press-release' | 'link-bio' | 'advocacy';
+type ToolType = 'ads' | 'seo' | 'email' | 'utm' | 'downloader' | 'compressor' | 'competitor' | 'influencer' | 'hashtag' | 'strategy' | 'roi' | 'abtest' | 'brand-voice' | 'product-desc' | 'bio-gen' | 'video-script' | 'review-reply' | 'social-listening' | 'lead-magnet' | 'email-sequence' | 'landing-page' | 'campaign-brief' | 'social-reply' | 'content-calendar' | 'ad-budget' | 'lead-scorer' | 'sales-script' | 'crisis-comms' | 'press-release' | 'link-bio' | 'advocacy' | 'content-curation' | 'social-audit' | 'post-optimizer' | 'community-mgr' | 'report-gen';
 
 export function Tools() {
   const { user } = useAuth();
@@ -298,6 +308,44 @@ export function Tools() {
         - 3 Variations of the post for employees to share
         - Why this matters to the company
         - Suggested image/video type.`;
+      } else if (activeTool === 'content-curation') {
+        prompt = `Find and curate 5 high-quality content pieces (articles, videos, or news) for the topic: "${input1}". 
+        Target Audience: ${input2 || 'General'}.
+        For each piece, provide:
+        - A suggested social media share caption
+        - Why it's relevant to the audience
+        - A "Takeaway" or "Insight" to add value to the share.`;
+      } else if (activeTool === 'social-audit') {
+        prompt = `Perform a comprehensive social media audit for: "${input1}". 
+        Platform(s): ${input2 || 'All'}.
+        Analyze:
+        - Profile Optimization (Bio, Links, Visuals)
+        - Content Performance (Engagement, Consistency)
+        - Audience Growth & Demographics
+        - 3 Immediate improvements to boost results.`;
+      } else if (activeTool === 'post-optimizer') {
+        prompt = `Determine the best times to post for: "${input1}". 
+        Platform: ${input2 || 'Instagram/LinkedIn'}.
+        Provide:
+        - 3 Recommended time slots (with reasoning)
+        - Frequency suggestions (daily/weekly)
+        - Content type recommendations for each slot.`;
+      } else if (activeTool === 'community-mgr') {
+        prompt = `Create a community management strategy for: "${input1}". 
+        Goal: ${input2 || 'Engagement & Loyalty'}.
+        Include:
+        - Engagement rules & response times
+        - Strategies for handling negative feedback
+        - Ideas for community-building activities (polls, Q&As, etc.)
+        - Tracking metrics for community health.`;
+      } else if (activeTool === 'report-gen') {
+        prompt = `Generate a professional monthly marketing report summary for: "${input1}". 
+        Key Results: ${input2 || 'General Performance'}.
+        Include:
+        - Executive Summary
+        - Key Wins & Achievements
+        - Metrics Breakdown (Reach, Engagement, Conversions)
+        - Next Month's Focus & Recommendations.`;
       }
 
       if (activeTool === 'utm') {
@@ -402,6 +450,12 @@ export function Tools() {
     { id: 'press-release', name: 'Press Release', icon: FileSpreadsheet, desc: 'Professional PR drafting', category: 'Enterprise' },
     { id: 'link-bio', name: 'Link-in-Bio', icon: ExternalLink, desc: 'Optimize social links', category: 'Enterprise' },
     { id: 'advocacy', name: 'Advocacy Post', icon: HeartHandshake, desc: 'Employee advocacy content', category: 'Enterprise' },
+    { id: 'report-gen', name: 'Report Gen', icon: FileBarChart, desc: 'Monthly client reports', category: 'Enterprise' },
+    
+    { id: 'content-curation', name: 'Content Curation', icon: Library, desc: 'Find & share relevant content', category: 'Utilities' },
+    { id: 'social-audit', name: 'Social Audit', icon: ClipboardCheck, desc: 'Analyze profile performance', category: 'Utilities' },
+    { id: 'post-optimizer', name: 'Post Optimizer', icon: Clock, desc: 'Best times to post', category: 'Utilities' },
+    { id: 'community-mgr', name: 'Community Manager', icon: UserPlus, desc: 'Engagement & loyalty strategy', category: 'Utilities' },
   ];
 
   const filteredTools = tools.filter(t => 
@@ -412,7 +466,7 @@ export function Tools() {
 
   const categories = ['Strategy', 'Content', 'Growth', 'Enterprise', 'Utilities'];
 
-  const newTools = ['social-listening', 'campaign-brief', 'lead-magnet', 'email-sequence', 'landing-page', 'social-reply', 'content-calendar', 'ad-budget', 'lead-scorer', 'sales-script', 'crisis-comms', 'press-release', 'link-bio', 'advocacy'];
+  const newTools = ['social-listening', 'campaign-brief', 'lead-magnet', 'email-sequence', 'landing-page', 'social-reply', 'content-calendar', 'ad-budget', 'lead-scorer', 'sales-script', 'crisis-comms', 'press-release', 'link-bio', 'advocacy', 'content-curation', 'social-audit', 'post-optimizer', 'community-mgr', 'report-gen'];
 
   return (
     <div className="space-y-6 md:space-y-8 pb-20 md:pb-0">
@@ -696,10 +750,10 @@ export function Tools() {
                        activeTool === 'link-bio' ? "Brand/Profile" :
                        activeTool === 'advocacy' ? "Company News/Topic" : "Product/Service Name"}
                     </label>
-                    {activeTool === 'brand-voice' || activeTool === 'review-reply' || activeTool === 'social-reply' || activeTool === 'lead-scorer' || activeTool === 'crisis-comms' ? (
+                    {activeTool === 'brand-voice' || activeTool === 'review-reply' || activeTool === 'social-reply' || activeTool === 'lead-scorer' || activeTool === 'crisis-comms' || activeTool === 'social-audit' ? (
                       <textarea 
                         className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder={activeTool === 'brand-voice' ? "Paste a sample of your writing..." : activeTool === 'social-reply' ? "Paste the social comment here..." : activeTool === 'lead-scorer' ? "Describe the lead (role, company, interaction)..." : activeTool === 'crisis-comms' ? "Describe the situation..." : "Paste the text here..."}
+                        placeholder={activeTool === 'brand-voice' ? "Paste a sample of your writing..." : activeTool === 'social-reply' ? "Paste the social comment here..." : activeTool === 'lead-scorer' ? "Describe the lead (role, company, interaction)..." : activeTool === 'crisis-comms' ? "Describe the situation..." : activeTool === 'social-audit' ? "Describe the current social presence..." : "Paste the text here..."}
                         value={input1}
                         onChange={(e) => setInput1(e.target.value)}
                       />
@@ -719,7 +773,11 @@ export function Tools() {
                                      activeTool === 'sales-script' ? "e.g., SEO Services" :
                                      activeTool === 'press-release' ? "e.g., New Office Opening" :
                                      activeTool === 'link-bio' ? "e.g., Fitness Coach" :
-                                     activeTool === 'advocacy' ? "e.g., New Feature Launch" : "e.g., Luxury Watches"} 
+                                     activeTool === 'advocacy' ? "e.g., New Feature Launch" : 
+                                     activeTool === 'content-curation' ? "e.g., AI in Marketing" :
+                                     activeTool === 'post-optimizer' ? "e.g., Tech Startup" :
+                                     activeTool === 'community-mgr' ? "e.g., SaaS Users Group" :
+                                     activeTool === 'report-gen' ? "e.g., Acme Corp Q1" : "e.g., Luxury Watches"} 
                         value={input1}
                         onChange={(e) => setInput1(e.target.value)}
                       />
@@ -754,7 +812,12 @@ export function Tools() {
                        activeTool === 'crisis-comms' ? "Severity" :
                        activeTool === 'press-release' ? "Announcement Type" :
                        activeTool === 'link-bio' ? "Primary Goal" :
-                       activeTool === 'advocacy' ? "Tone" : "Source (e.g., facebook)"}
+                       activeTool === 'advocacy' ? "Tone" : 
+                       activeTool === 'content-curation' ? "Target Audience" :
+                       activeTool === 'social-audit' ? "Platforms to Audit" :
+                       activeTool === 'post-optimizer' ? "Target Platform" :
+                       activeTool === 'community-mgr' ? "Primary Goal" :
+                       activeTool === 'report-gen' ? "Key Results/Metrics" : "Source (e.g., facebook)"}
                     </label>
                     <Input 
                       placeholder={activeTool === 'competitor' ? "e.g., Social Media, Pricing" : 

@@ -13,7 +13,9 @@ export function SEOGenerator() {
   const { user } = useAuth();
   const [topic, setTopic] = useState("");
   const [platform, setPlatform] = useState("YouTube");
+  const [niche, setNiche] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
+  const [audienceDemographics, setAudienceDemographics] = useState("");
   const [tone, setTone] = useState("Professional");
   const [format, setFormat] = useState("Standard SEO Pack");
   const [loading, setLoading] = useState(false);
@@ -27,20 +29,27 @@ export function SEOGenerator() {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `As an expert Digital Marketing Executive, generate trending and SEO-friendly content for the following:
+        contents: `As an expert Digital Marketing Executive and SEO Specialist, generate a highly targeted, trending, and SEO-optimized content pack for the following:
+        
         Topic/Keywords: ${topic}
+        Niche/Industry: ${niche || "General Marketing"}
         Platform: ${platform}
         Target Audience: ${targetAudience || "General"}
+        Audience Demographics: ${audienceDemographics || "All ages/locations"}
         Tone: ${tone}
         Desired Output Format: ${format}
         
-        Please provide:
-        1. **5 Trending & SEO-Optimized Titles** (High CTR focus)
-        2. **A Compelling Description** (Optimized for search algorithms and user engagement)
-        3. **15-20 Trending Hashtags** (Categorized by reach: High, Medium, Niche)
-        4. **Primary & Secondary Keywords** to include for better ranking
+        Please provide a comprehensive response including:
+        1. **5 High-CTR & SEO-Optimized Titles**: Tailored specifically for the ${platform} algorithm and the ${targetAudience} audience.
+        2. **A Compelling Meta Description/Caption**: Optimized for search intent, including primary keywords, and designed to maximize user engagement and click-through rate.
+        3. **Strategic Keyword List**:
+           - Primary Keywords (High volume)
+           - Secondary/LSI Keywords (Contextual)
+           - Long-tail Keywords (Specific intent)
+        4. **15-20 Trending Hashtags**: Categorized by reach (High, Medium, Niche) specifically for ${platform}.
+        5. **Content Strategy Tip**: One actionable tip on how to structure the content for this specific niche and audience to improve ranking.
         
-        Format the output clearly using Markdown with headers for each section.`,
+        Format the output clearly using professional Markdown with headers, bullet points, and bold text for key terms.`,
       });
 
       const text = response.text || "No response from AI.";
@@ -82,10 +91,10 @@ export function SEOGenerator() {
         <p className="text-muted-foreground">Generate high-ranking titles, descriptions, and hashtags for any platform.</p>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-3">
-        <Card className="md:col-span-1 border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-1 border-primary/20 bg-primary/5 h-fit">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center space-x-2 text-xl">
               <TrendingUp className="h-5 w-5 text-primary" />
               <span>Generator Settings</span>
             </CardTitle>
@@ -93,42 +102,81 @@ export function SEOGenerator() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Main Topic / Keywords</label>
+              <label className="text-sm font-semibold">Main Topic / Keywords</label>
               <Input 
                 placeholder="e.g., Best AI Tools 2024, Digital Marketing Tips" 
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
+                className="bg-background"
               />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Platform</label>
-              <select 
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={platform}
-                onChange={(e) => setPlatform(e.target.value)}
-              >
-                <option>YouTube</option>
-                <option>Blog / Article</option>
-                <option>Instagram</option>
-                <option>LinkedIn</option>
-                <option>Twitter / X</option>
-                <option>TikTok</option>
-                <option>Facebook</option>
-              </select>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Target Audience</label>
+              <label className="text-sm font-semibold">Niche / Industry</label>
+              <Input 
+                placeholder="e.g., SaaS, E-commerce, Personal Finance" 
+                value={niche}
+                onChange={(e) => setNiche(e.target.value)}
+                className="bg-background"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Platform</label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                >
+                  <option>YouTube</option>
+                  <option>Blog / Article</option>
+                  <option>Instagram</option>
+                  <option>LinkedIn</option>
+                  <option>Twitter / X</option>
+                  <option>TikTok</option>
+                  <option>Facebook</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Tone</label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={tone}
+                  onChange={(e) => setTone(e.target.value)}
+                >
+                  <option>Professional</option>
+                  <option>Casual / Friendly</option>
+                  <option>Excited / High Energy</option>
+                  <option>Educational</option>
+                  <option>Witty / Humorous</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Target Audience</label>
               <Input 
                 placeholder="e.g., Small business owners, Tech enthusiasts" 
                 value={targetAudience}
                 onChange={(e) => setTargetAudience(e.target.value)}
+                className="bg-background"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Output Format</label>
+              <label className="text-sm font-semibold">Audience Demographics</label>
+              <Input 
+                placeholder="e.g., 25-45, USA, Marketing Professionals" 
+                value={audienceDemographics}
+                onChange={(e) => setAudienceDemographics(e.target.value)}
+                className="bg-background"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Output Format</label>
               <select 
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={format}
@@ -141,23 +189,8 @@ export function SEOGenerator() {
               </select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tone</label>
-              <select 
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={tone}
-                onChange={(e) => setTone(e.target.value)}
-              >
-                <option>Professional</option>
-                <option>Casual / Friendly</option>
-                <option>Excited / High Energy</option>
-                <option>Educational</option>
-                <option>Witty / Humorous</option>
-              </select>
-            </div>
-
             <Button 
-              className="w-full shadow-lg shadow-primary/20" 
+              className="w-full shadow-lg shadow-primary/20 h-11" 
               onClick={generateSEOContent}
               disabled={loading || !topic}
             >
@@ -176,17 +209,17 @@ export function SEOGenerator() {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2 hover:shadow-xl transition-all duration-500">
-          <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
-            <div>
-              <CardTitle className="flex items-center space-x-2">
+        <Card className="lg:col-span-2 hover:shadow-xl transition-all duration-500 overflow-hidden">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b pb-4 gap-4">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center space-x-2 text-xl">
                 <Search className="h-5 w-5 text-primary" />
                 <span>Optimized Results</span>
               </CardTitle>
               <CardDescription>Your trending titles, descriptions, and hashtags.</CardDescription>
             </div>
             {result && (
-              <Button variant="outline" size="sm" onClick={copyToClipboard} className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={copyToClipboard} className="flex items-center space-x-2 w-full sm:w-auto">
                 {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                 <span>{copied ? "Copied!" : "Copy All"}</span>
               </Button>
@@ -194,11 +227,11 @@ export function SEOGenerator() {
           </CardHeader>
           <CardContent className="pt-6">
             {result ? (
-              <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-primary prose-strong:text-foreground">
+              <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-primary prose-strong:text-foreground overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
                 <ReactMarkdown>{result}</ReactMarkdown>
               </div>
             ) : (
-              <div className="flex h-[400px] flex-col items-center justify-center space-y-6 text-center text-muted-foreground">
+              <div className="flex min-h-[400px] flex-col items-center justify-center space-y-6 text-center text-muted-foreground p-4">
                 <div className="relative">
                   <div className="absolute -inset-4 rounded-full bg-primary/10 animate-pulse" />
                   <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/20 text-primary">
@@ -209,21 +242,21 @@ export function SEOGenerator() {
                   <p className="font-semibold text-foreground">Ready to rank?</p>
                   <p className="text-sm">Enter your topic and platform details to generate a complete SEO-optimized content pack.</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4 w-full max-w-sm pt-4">
-                  <div className="flex items-center space-x-2 text-xs bg-muted p-2 rounded-lg">
-                    <Type className="h-3 w-3 text-primary" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-sm pt-4">
+                  <div className="flex items-center space-x-2 text-xs bg-muted p-3 rounded-lg">
+                    <Type className="h-4 w-4 text-primary" />
                     <span>High CTR Titles</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-xs bg-muted p-2 rounded-lg">
-                    <FileText className="h-3 w-3 text-primary" />
+                  <div className="flex items-center space-x-2 text-xs bg-muted p-3 rounded-lg">
+                    <FileText className="h-4 w-4 text-primary" />
                     <span>SEO Descriptions</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-xs bg-muted p-2 rounded-lg">
-                    <Hash className="h-3 w-3 text-primary" />
+                  <div className="flex items-center space-x-2 text-xs bg-muted p-3 rounded-lg">
+                    <Hash className="h-4 w-4 text-primary" />
                     <span>Trending Tags</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-xs bg-muted p-2 rounded-lg">
-                    <Search className="h-3 w-3 text-primary" />
+                  <div className="flex items-center space-x-2 text-xs bg-muted p-3 rounded-lg">
+                    <Search className="h-4 w-4 text-primary" />
                     <span>Keyword Research</span>
                   </div>
                 </div>
@@ -234,7 +267,7 @@ export function SEOGenerator() {
       </div>
 
       {/* SEO Tips Section */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="bg-blue-50/50 border-blue-100">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold flex items-center space-x-2">
