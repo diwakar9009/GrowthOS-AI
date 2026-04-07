@@ -212,44 +212,46 @@ export function Calendar() {
             <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date())}>Today</Button>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-7 gap-px bg-muted border rounded-lg overflow-hidden">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="bg-background p-2 text-center text-xs font-bold text-muted-foreground">
-                  {day}
-                </div>
-              ))}
-              {prevMonthEmptyDays.map(i => (
-                <div key={`empty-${i}`} className="bg-muted/30 h-24 p-2" />
-              ))}
-              {days.map(day => {
-                const dayEvents = getEventsForDay(day);
-                const isToday = new Date().getDate() === day && new Date().getMonth() === currentDate.getMonth() && new Date().getFullYear() === currentDate.getFullYear();
-                
-                return (
-                  <div key={day} className={cn(
-                    "bg-background h-24 p-2 border-t border-l transition-colors hover:bg-accent/50",
-                    isToday && "bg-primary/5"
-                  )}>
-                    <span className={cn(
-                      "text-xs font-medium",
-                      isToday && "text-primary font-bold"
-                    )}>{day}</span>
-                    <div className="mt-1 space-y-1">
-                      {dayEvents.map(event => (
-                        <div 
-                          key={event.id} 
-                          className={cn(
-                            "text-[8px] p-1 rounded truncate border",
-                            event.status === 'posted' ? "bg-green-50 border-green-200 text-green-700" : "bg-primary/10 border-primary/20 text-primary"
-                          )}
-                        >
-                          {event.title}
-                        </div>
-                      ))}
-                    </div>
+            <div className="overflow-x-auto no-scrollbar -mx-2 px-2">
+              <div className="grid grid-cols-7 gap-px bg-muted border rounded-lg overflow-hidden min-w-[600px] md:min-w-0">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} className="bg-background p-2 text-center text-xs font-bold text-muted-foreground">
+                    {day}
                   </div>
-                );
-              })}
+                ))}
+                {prevMonthEmptyDays.map(i => (
+                  <div key={`empty-${i}`} className="bg-muted/30 h-24 p-2" />
+                ))}
+                {days.map(day => {
+                  const dayEvents = getEventsForDay(day);
+                  const isToday = new Date().getDate() === day && new Date().getMonth() === currentDate.getMonth() && new Date().getFullYear() === currentDate.getFullYear();
+                  
+                  return (
+                    <div key={day} className={cn(
+                      "bg-background h-24 p-2 border-t border-l transition-colors hover:bg-accent/50",
+                      isToday && "bg-primary/5"
+                    )}>
+                      <span className={cn(
+                        "text-xs font-medium",
+                        isToday && "text-primary font-bold"
+                      )}>{day}</span>
+                      <div className="mt-1 space-y-1">
+                        {dayEvents.map(event => (
+                          <div 
+                            key={event.id} 
+                            className={cn(
+                              "text-[8px] p-1 rounded truncate border",
+                              event.status === 'posted' ? "bg-green-50 border-green-200 text-green-700" : "bg-primary/10 border-primary/20 text-primary"
+                            )}
+                          >
+                            {event.title}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -44,7 +44,12 @@ import {
   DollarSign,
   Calendar,
   Percent,
-  TrendingDown
+  TrendingDown,
+  Check,
+  Twitter,
+  Linkedin,
+  Facebook,
+  Link2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/lib/AuthContext";
@@ -53,13 +58,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "./Button";
 
 const growthData = [
-  { name: "Mon", followers: 4000, engagement: 2400, reach: 12000 },
-  { name: "Tue", followers: 4200, engagement: 2800, reach: 13500 },
-  { name: "Wed", followers: 4500, engagement: 2200, reach: 11000 },
-  { name: "Thu", followers: 4800, engagement: 3200, reach: 15000 },
-  { name: "Fri", followers: 5100, engagement: 3800, reach: 18000 },
-  { name: "Sat", followers: 5400, engagement: 4200, reach: 21000 },
-  { name: "Sun", followers: 5800, engagement: 3900, reach: 19500 },
+  { name: "Mon", followers: 4000, engagement: 2400, reach: 12000, conversionRate: 3.2 },
+  { name: "Tue", followers: 4200, engagement: 2800, reach: 13500, conversionRate: 3.8 },
+  { name: "Wed", followers: 4500, engagement: 2200, reach: 11000, conversionRate: 3.1 },
+  { name: "Thu", followers: 4800, engagement: 3200, reach: 15000, conversionRate: 4.5 },
+  { name: "Fri", followers: 5100, engagement: 3800, reach: 18000, conversionRate: 5.2 },
+  { name: "Sat", followers: 5400, engagement: 4200, reach: 21000, conversionRate: 5.8 },
+  { name: "Sun", followers: 5800, engagement: 3900, reach: 19500, conversionRate: 5.4 },
 ];
 
 const acquisitionData = [
@@ -98,6 +103,34 @@ const cpaData = [
   { name: "Week 4", value: 12.45 },
 ];
 
+const ShareActions = ({ title }: { title: string }) => {
+  const [copied, setCopied] = useState(false);
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(`Check out my ${title} metrics on GrowthOS AI!`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex items-center space-x-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+      <button 
+        onClick={handleCopy}
+        className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-primary transition-colors"
+        title="Copy Link"
+      >
+        {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Link2 className="h-3.5 w-3.5" />}
+      </button>
+      <button className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-[#1DA1F2] transition-colors" title="Share on Twitter">
+        <Twitter className="h-3.5 w-3.5" />
+      </button>
+      <button className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-[#0A66C2] transition-colors" title="Share on LinkedIn">
+        <Linkedin className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+};
+
 export function Analytics() {
   const { user } = useAuth();
   const [counts, setCounts] = useState({
@@ -107,7 +140,8 @@ export function Analytics() {
     tasks: 0
   });
   const [loading, setLoading] = useState(true);
-  const [selectedClient, setSelectedClient] = useState("all");
+  const [selectedClients, setSelectedClients] = useState<string[]>(["all"]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [dateRange, setDateRange] = useState("7d");
   const [clients, setClients] = useState<any[]>([]);
   const [realtimeUsers, setRealtimeUsers] = useState(124);
@@ -172,53 +206,120 @@ export function Analytics() {
     };
   }, [user, clients.length]);
 
-  const filteredClients = selectedClient === "all" 
+  const filteredClients = selectedClients.includes("all") 
     ? clients 
-    : clients.filter(c => c.name === selectedClient);
+    : clients.filter(c => selectedClients.includes(c.name));
+
+  const toggleClient = (clientName: string) => {
+    if (clientName === "all") {
+      setSelectedClients(["all"]);
+    } else {
+      setSelectedClients(prev => {
+        const withoutAll = prev.filter(c => c !== "all");
+        if (withoutAll.includes(clientName)) {
+          const next = withoutAll.filter(c => c !== clientName);
+          return next.length === 0 ? ["all"] : next;
+        } else {
+          return [...withoutAll, clientName];
+        }
+      });
+    }
+  };
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 md:space-y-8 pb-20 md:pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Growth Intelligence</h1>
-          <p className="text-muted-foreground">Comprehensive Google Analytics-style insights and live campaign statistics.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Growth Intelligence</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Comprehensive Google Analytics-style insights and live campaign statistics.</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-2 bg-background border rounded-md px-2 py-1">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <select 
-              className="bg-transparent text-sm outline-none"
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+            <div className="flex items-center space-x-2 bg-background border rounded-md px-2 py-1.5 whitespace-nowrap">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <select 
+                className="bg-transparent text-xs md:text-sm outline-none"
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+              >
+                <option value="24h">Last 24 Hours</option>
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="90d">Last 90 Days</option>
+              </select>
+            </div>
+          <div className="relative whitespace-nowrap">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center space-x-2 h-9"
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
-              <option value="24h">Last 24 Hours</option>
-              <option value="7d">Last 7 Days</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="90d">Last 90 Days</option>
-            </select>
-          </div>
-          <div className="flex items-center space-x-2 bg-background border rounded-md px-2 py-1">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <select 
-              className="bg-transparent text-sm outline-none"
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-            >
-              <option value="all">All Properties</option>
-              {clients.map(c => (
-                <option key={c.id} value={c.name}>{c.name}</option>
-              ))}
-            </select>
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs md:text-sm">
+                {selectedClients.includes("all") 
+                  ? "All Properties" 
+                  : `${selectedClients.length} Selected`}
+              </span>
+            </Button>
+            
+            {isFilterOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setIsFilterOpen(false)}
+                />
+                <div className="absolute right-0 mt-2 w-56 bg-background border rounded-md shadow-lg z-20 p-2 max-h-64 overflow-y-auto">
+                  <div 
+                    className={cn(
+                      "flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-muted transition-all duration-200 hover:scale-[1.02] hover:shadow-sm",
+                      selectedClients.includes("all") && "bg-primary/10 text-primary"
+                    )}
+                    onClick={() => toggleClient("all")}
+                  >
+                    <div className={cn(
+                      "h-4 w-4 border rounded flex items-center justify-center",
+                      selectedClients.includes("all") ? "bg-primary border-primary" : "border-muted-foreground"
+                    )}>
+                      {selectedClients.includes("all") && <Check className="h-3 w-3 text-white" />}
+                    </div>
+                    <span className="text-sm font-medium">All Properties</span>
+                  </div>
+                  
+                  <div className="h-px bg-border my-1" />
+                  
+                  {clients.map(c => (
+                    <div 
+                      key={c.id}
+                      className={cn(
+                        "flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-muted transition-all duration-200 hover:scale-[1.02] hover:shadow-sm",
+                        selectedClients.includes(c.name) && "bg-primary/10 text-primary"
+                      )}
+                      onClick={() => toggleClient(c.name)}
+                    >
+                      <div className={cn(
+                        "h-4 w-4 border rounded flex items-center justify-center",
+                        selectedClients.includes(c.name) ? "bg-primary border-primary" : "border-muted-foreground"
+                      )}>
+                        {selectedClients.includes(c.name) && <Check className="h-3 w-3 text-white" />}
+                      </div>
+                      <span className="text-sm truncate">{c.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
           <Button variant="outline" size="sm">
             Export
           </Button>
         </div>
       </div>
+    </div>
 
       {/* Real-time & High-level Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="relative overflow-hidden border-primary/20 bg-primary/5">
+        <Card className="relative overflow-hidden border-primary/20 bg-primary/5 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-default">
           <div className="absolute top-2 right-2 flex items-center space-x-1">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -297,14 +398,45 @@ export function Analytics() {
       </div>
 
       {/* Profitability Visualizations */}
+      {/* Detailed Profitability Metrics */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard 
+          title="Customer Acquisition Cost (CAC)" 
+          value={`$${(Math.random() * 10 + 15).toFixed(2)}`}
+          change="-8.4%"
+          trend="up"
+          icon={<DollarSign className="h-4 w-4" />}
+          description="Average cost to acquire a new customer through paid campaigns."
+        />
+        <MetricCard 
+          title="Customer Lifetime Value (CLV)" 
+          value={`$${(Math.random() * 200 + 450).toFixed(0)}`}
+          change="+15.2%"
+          trend="up"
+          icon={<TrendingUp className="h-4 w-4" />}
+          description="Predicted net profit attributed to the entire future relationship with a customer."
+        />
+        <MetricCard 
+          title="CLV:CAC Ratio" 
+          value={`${(Math.random() * 2 + 3).toFixed(1)}x`}
+          change="+2.1%"
+          trend="up"
+          icon={<Zap className="h-4 w-4" />}
+          description="Efficiency of marketing spend relative to customer value. Target: >3x."
+        />
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-2">
-        <Card className="border-primary/20 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <span>ROAS Performance</span>
-            </CardTitle>
-            <CardDescription>Return on Ad Spend trend over the last 4 weeks.</CardDescription>
+        <Card className="border-primary/20 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default group">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center space-x-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <span>ROAS Performance</span>
+              </CardTitle>
+              <CardDescription>Return on Ad Spend trend over the last 4 weeks.</CardDescription>
+            </div>
+            <ShareActions title="ROAS Performance" />
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -322,13 +454,16 @@ export function Analytics() {
           </CardContent>
         </Card>
 
-        <Card className="border-emerald-100 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5 text-emerald-600" />
-              <span>CPA Efficiency</span>
-            </CardTitle>
-            <CardDescription>Cost Per Acquisition trend (Lower is better).</CardDescription>
+        <Card className="border-emerald-100 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default group">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-emerald-600" />
+                <span>CPA Efficiency</span>
+              </CardTitle>
+              <CardDescription>Cost Per Acquisition trend (Lower is better).</CardDescription>
+            </div>
+            <ShareActions title="CPA Efficiency" />
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -349,7 +484,7 @@ export function Analytics() {
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Acquisition Sources */}
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default">
           <CardHeader>
             <CardTitle>Acquisition</CardTitle>
             <CardDescription>Where your traffic comes from.</CardDescription>
@@ -385,20 +520,27 @@ export function Analytics() {
         </Card>
 
         {/* Behavior Flow / Growth */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default group">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>User Behavior</CardTitle>
               <CardDescription>Engagement and reach trends over time.</CardDescription>
             </div>
-            <div className="flex space-x-2">
-              <div className="flex items-center space-x-1">
-                <div className="h-2 w-2 rounded-full bg-primary" />
-                <span className="text-[10px] text-muted-foreground">Reach</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                <span className="text-[10px] text-muted-foreground">Engagement</span>
+            <div className="flex items-center space-x-4">
+              <ShareActions title="User Behavior" />
+              <div className="flex space-x-2">
+                <div className="flex items-center space-x-1">
+                  <div className="h-2 w-2 rounded-full bg-primary" />
+                  <span className="text-[10px] text-muted-foreground">Reach</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="text-[10px] text-muted-foreground">Engagement</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="h-2 w-2 rounded-full bg-amber-500" />
+                  <span className="text-[10px] text-muted-foreground">Conv. Rate</span>
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -413,11 +555,13 @@ export function Analytics() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12}} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
+                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 12}} unit="%" />
                 <Tooltip 
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                 />
                 <Area 
+                  yAxisId="left"
                   type="monotone" 
                   dataKey="reach" 
                   stroke="var(--color-primary)" 
@@ -426,11 +570,21 @@ export function Analytics() {
                   strokeWidth={2}
                 />
                 <Area 
+                  yAxisId="left"
                   type="monotone" 
                   dataKey="engagement" 
                   stroke="#10b981" 
                   fillOpacity={0} 
                   strokeWidth={2}
+                />
+                <Line 
+                  yAxisId="right"
+                  type="monotone" 
+                  dataKey="conversionRate" 
+                  stroke="#f59e0b" 
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -440,7 +594,7 @@ export function Analytics() {
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Live Campaign Feed */}
-        <Card className="lg:col-span-1 border-emerald-100 bg-emerald-50/30">
+        <Card className="lg:col-span-1 border-emerald-100 bg-emerald-50/30 hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Activity className="h-5 w-5 text-emerald-600" />
@@ -485,7 +639,7 @@ export function Analytics() {
         </Card>
 
         {/* Audience Insights Radar */}
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default">
           <CardHeader>
             <CardTitle>Audience Profile</CardTitle>
             <CardDescription>Psychographic and behavior breakdown.</CardDescription>
@@ -510,7 +664,7 @@ export function Analytics() {
         </Card>
 
         {/* Device & Geo Distribution */}
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default">
           <CardHeader>
             <CardTitle>Tech Distribution</CardTitle>
             <CardDescription>Devices used by your audience.</CardDescription>
@@ -564,7 +718,7 @@ export function Analytics() {
       </div>
 
       {/* Campaign Live Monitor */}
-      <Card className="border-primary/10">
+      <Card className="border-primary/10 hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -582,7 +736,7 @@ export function Analytics() {
             {filteredClients.slice(0, 8).map((client, i) => {
               const stats = liveCampaignStats[client.id] || { impressions: 0, ctr: 0, engagement: 0 };
               return (
-                <div key={client.id} className="p-4 rounded-xl border bg-card hover:border-primary/30 transition-all group">
+                <div key={client.id} className="p-4 rounded-xl border bg-card hover:border-primary/30 hover:shadow-md hover:scale-[1.02] transition-all duration-300 group cursor-pointer">
                   <div className="flex items-center justify-between mb-3">
                     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                       {client.name.substring(0, 2).toUpperCase()}
@@ -634,10 +788,13 @@ function MetricCard({ title, value, change, trend, icon, description }: {
   description?: string
 }) {
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-default group">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className="text-muted-foreground">{icon}</div>
+        <div className="flex items-center space-x-2">
+          <ShareActions title={title} />
+          <div className="text-muted-foreground">{icon}</div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>

@@ -10,6 +10,8 @@ import { Dashboard } from "./components/Dashboard";
 import { AICaptionGenerator } from "./components/AICaptionGenerator";
 import { Trends } from "./components/Trends";
 import { Analytics } from "./components/Analytics";
+import { ContentOptimizer } from "./components/ContentOptimizer";
+import { SEOGenerator } from "./components/SEOGenerator";
 import { Clients } from "./components/Clients";
 import { Calendar } from "./components/Calendar";
 import { Tools } from "./components/Tools";
@@ -56,6 +58,8 @@ function AppContent() {
           <Route path="/trends" element={<Trends />} />
           <Route path="/assets" element={<Assets />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/content-seo" element={<ContentOptimizer />} />
+          <Route path="/seo-generator" element={<SEOGenerator />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />

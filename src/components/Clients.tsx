@@ -90,13 +90,13 @@ export function Clients() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 md:space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Client Management</h1>
-          <p className="text-muted-foreground">Track your client campaigns and progress.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Client Management</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Track your client campaigns and progress.</p>
         </div>
-        <Button onClick={() => setIsAdding(!isAdding)}>
+        <Button onClick={() => setIsAdding(!isAdding)} className="w-full md:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Client
         </Button>
@@ -115,7 +115,7 @@ export function Clients() {
                 <CardTitle className="text-lg">New Client Information</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleAddClient} className="grid gap-4 md:grid-cols-3">
+                <form onSubmit={handleAddClient} className="grid gap-4 grid-cols-1 md:grid-cols-3">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Client Name</label>
                     <Input 
@@ -168,7 +168,7 @@ export function Clients() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : clients.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
           {clients.map((client, index) => (
             <motion.div
               key={client.id}

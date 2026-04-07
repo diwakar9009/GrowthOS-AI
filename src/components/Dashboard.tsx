@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight } from "lucide-react";
+import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight, Plus, Calendar as CalendarIcon, PenTool, Wrench, Target, Ear, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Button } from "./Button";
 import { MOCK_SUGGESTIONS, MOCK_TRENDS } from "@/constants";
@@ -18,6 +18,13 @@ export function Dashboard() {
   const [nextPost, setNextPost] = useState<any>(null);
   const [briefing, setBriefing] = useState<string | null>(null);
   const [loadingBriefing, setLoadingBriefing] = useState(false);
+
+  const quickActions = [
+    { name: "New Strategy", icon: Sparkles, href: "/tools", color: "bg-blue-500" },
+    { name: "Lead Scorer", icon: Target, href: "/tools", color: "bg-purple-500" },
+    { name: "Social Listening", icon: Ear, href: "/tools", color: "bg-orange-500" },
+    { name: "Campaign Brief", icon: FileText, href: "/tools", color: "bg-green-500" },
+  ];
 
   useEffect(() => {
     if (!user) return;
@@ -87,39 +94,56 @@ export function Dashboard() {
   }, [recentTasks]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* Welcome Header */}
       <div className="flex flex-col space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Personal Assistant Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back, {profile?.displayName?.split(' ')[0] || 'Diwakar'}. Ready to manage your campaigns?</p>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Personal Assistant Dashboard</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Welcome back, {profile?.displayName?.split(' ')[0] || 'Diwakar'}. Ready to manage your campaigns?</p>
       </div>
 
-      {/* AI Briefing */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center">
-            <Sparkles className="mr-2 h-4 w-4 text-primary" />
-            AI Daily Briefing
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingBriefing ? (
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Analyzing your recent activity...</span>
-            </div>
-          ) : briefing ? (
-            <div className="prose prose-sm max-w-none dark:prose-invert text-muted-foreground">
-              <ReactMarkdown>{briefing}</ReactMarkdown>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">No briefing available yet. Start by generating some content!</p>
-          )}
-        </CardContent>
-      </Card>
+      {/* AI Briefing & Quick Actions */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2 border-primary/20 bg-gradient-to-br from-primary/5 to-background shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold flex items-center">
+              <Sparkles className="mr-2 h-4 w-4 text-primary" />
+              AI Daily Briefing
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingBriefing ? (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Analyzing your recent activity...</span>
+              </div>
+            ) : briefing ? (
+              <div className="prose prose-sm max-w-none dark:prose-invert text-muted-foreground leading-relaxed">
+                <ReactMarkdown>{briefing}</ReactMarkdown>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic py-4">No briefing available yet. Start by generating some content!</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-2 gap-4">
+          {quickActions.map((action) => (
+            <Link key={action.name} to={action.href}>
+              <Card className="h-full hover:border-primary/50 transition-all group cursor-pointer active:scale-95">
+                <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-2">
+                  <div className={cn("p-2 rounded-lg text-white transition-transform group-hover:scale-110", action.color)}>
+                    <action.icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-xs font-bold">{action.name}</span>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-primary/5 border-primary/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Clients</CardTitle>

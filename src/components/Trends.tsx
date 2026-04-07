@@ -7,18 +7,24 @@ import { TrendingUp, Sparkles, Loader2, Search, Briefcase } from "lucide-react";
 import { MOCK_TRENDS } from "@/constants";
 import { motion } from "motion/react";
 import ReactMarkdown from "react-markdown";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 import { db, collection, addDoc, query, orderBy, onSnapshot } from "@/lib/firebase";
 
 export function Trends() {
   const { profile, user } = useAuth();
   const [niche, setNiche] = useState(profile?.niche || "");
+  const [audience, setAudience] = useState("General");
+  const [format, setFormat] = useState("Viral Content Ideas");
   const [client, setClient] = useState("");
   const [clientId, setClientId] = useState("");
   const [clientVoice, setClientVoice] = useState("");
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [ideas, setIdeas] = useState<string | null>(null);
+  const [keywordTopic, setKeywordTopic] = useState("");
+  const [keywords, setKeywords] = useState<any[]>([]);
+  const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -37,10 +43,13 @@ export function Trends() {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `Generate 5 viral content ideas for a ${niche || "general"} creator based on the trending topic: "${trend}".
+        Target Audience: ${audience}
         Client/Project Context: ${client || "General"}
         Brand Voice/Tone: ${clientVoice || "Professional & Engaging"}
-        Include:
-        - Video/Reel hook
+        Output Format: ${format}
+        
+        Please provide:
+        - Video/Reel hook (tailored to audience)
         - Brief description
         - Why it's trending (use real-time data if possible)
         - Call to action (CTA)`,
@@ -75,6 +84,30 @@ export function Trends() {
     }
   };
 
+  const generateKeywords = async () => {
+    if (!keywordTopic || !user) return;
+    setIsGeneratingKeywords(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `As an SEO expert, generate a list of 10-15 trending and high-volume keywords for the topic: "${keywordTopic}" in the ${niche || "general"} niche. 
+        Target Audience: ${audience}
+        Format as JSON with an array of objects: { keyword: string, volume: string, difficulty: 'low' | 'medium' | 'high', trend: 'up' | 'down' | 'stable' }`,
+        config: {
+          responseMimeType: "application/json"
+        }
+      });
+      
+      const result = JSON.parse(response.text || "[]");
+      setKeywords(result);
+    } catch (error) {
+      console.error("Keyword generation failed:", error);
+    } finally {
+      setIsGeneratingKeywords(false);
+    }
+  };
+
   const handleClientChange = (val: string) => {
     if (val === "custom") {
       setClientId("");
@@ -92,13 +125,13 @@ export function Trends() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       <div className="flex flex-col space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Trend Assistant</h1>
-        <p className="text-muted-foreground">Find viral ideas for your client campaigns.</p>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Trend Assistant</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Find viral ideas for your client campaigns.</p>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-3">
+      <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-3">
         <div className="md:col-span-1 space-y-6">
           <Card>
             <CardHeader>
@@ -143,36 +176,105 @@ export function Trends() {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Target Audience</label>
+                <Input 
+                  placeholder="e.g., Gen Z, Tech Enthusiasts" 
+                  value={audience}
+                  onChange={(e) => setAudience(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Output Format</label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={format}
+                  onChange={(e) => setFormat(e.target.value)}
+                >
+                  <option>Viral Content Ideas</option>
+                  <option>Short-form Video Script</option>
+                  <option>Educational Thread</option>
+                  <option>Marketing Campaign Concept</option>
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center space-x-2">
+                <Search className="h-4 w-4 text-primary" />
+                <span>Keyword Generator</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Input 
+                placeholder="Enter topic for keywords..." 
+                value={keywordTopic}
+                onChange={(e) => setKeywordTopic(e.target.value)}
+                className="text-xs"
+              />
+              <Button 
+                size="sm" 
+                className="w-full text-xs" 
+                onClick={generateKeywords}
+                disabled={isGeneratingKeywords || !keywordTopic}
+              >
+                {isGeneratingKeywords ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Sparkles className="h-3 w-3 mr-2" />}
+                Generate Keywords
+              </Button>
+              
+              {keywords.length > 0 && (
+                <div className="space-y-2 pt-2 border-t">
+                  {keywords.map((kw, i) => (
+                    <div key={i} className="flex items-center justify-between text-[10px] p-1.5 rounded bg-background border">
+                      <span className="font-bold truncate max-w-[100px]">{kw.keyword}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className={cn(
+                          "px-1 rounded",
+                          kw.difficulty === 'low' ? "bg-green-100 text-green-700" :
+                          kw.difficulty === 'medium' ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700"
+                        )}>
+                          {kw.difficulty}
+                        </span>
+                        <span className="text-muted-foreground">{kw.volume}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <div className="space-y-4">
-            <h3 className="font-semibold">Current Trends</h3>
-            {MOCK_TRENDS.map((trend, index) => (
-              <motion.div
-                key={trend.keyword}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card 
-                  className="cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => generateIdeas(trend.keyword)}
+            <h3 className="font-semibold text-sm md:text-base">Current Trends</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-3">
+              {MOCK_TRENDS.map((trend, index) => (
+                <motion.div
+                  key={trend.keyword}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
                 >
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <TrendingUp className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">{trend.keyword}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground uppercase">{trend.platform}</span>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                  <Card 
+                    className="cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => generateIdeas(trend.keyword)}
+                  >
+                    <CardContent className="p-3 md:p-4 flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        <span className="text-xs md:text-sm font-medium">{trend.keyword}</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground uppercase">{trend.platform}</span>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
 
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-2 h-fit">
           <CardHeader>
             <CardTitle>Content Ideas</CardTitle>
             <CardDescription>AI-generated ideas based on the selected trend.</CardDescription>

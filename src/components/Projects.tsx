@@ -4,7 +4,7 @@ import { db, collection, query, orderBy, onSnapshot, addDoc, doc, updateDoc, del
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Button } from "./Button";
 import { Input } from "./Input";
-import { Plus, Layout, Clock, AlertCircle, CheckCircle2, MoreVertical, Trash2, Filter, Briefcase } from "lucide-react";
+import { Plus, Layout, Clock, AlertCircle, CheckCircle2, MoreVertical, Trash2, Filter, Briefcase, Sparkles, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,59 @@ const COLUMNS = [
   { id: 'in-progress', title: 'In Progress', icon: Layout, color: 'text-orange-600', bg: 'bg-orange-50' },
   { id: 'review', title: 'Review', icon: AlertCircle, color: 'text-purple-600', bg: 'bg-purple-50' },
   { id: 'done', title: 'Done', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' }
+];
+
+const TEMPLATES = [
+  {
+    id: 'product-launch',
+    name: 'Product Launch',
+    description: 'Comprehensive setup for a new product launch.',
+    icon: Sparkles,
+    tasks: [
+      { title: 'Market Research', priority: 'high', description: 'Analyze target audience and market trends.' },
+      { title: 'Competitor Analysis', priority: 'medium', description: 'Identify key competitors and their strategies.' },
+      { title: 'Landing Page Development', priority: 'high', description: 'Design and build the product landing page.' },
+      { title: 'Email Marketing Setup', priority: 'medium', description: 'Create email sequences for the launch.' },
+      { title: 'Social Media Teasers', priority: 'medium', description: 'Plan and schedule teaser posts.' },
+    ]
+  },
+  {
+    id: 'social-media',
+    name: 'Social Media Campaign',
+    description: 'Standard tasks for a monthly social media campaign.',
+    icon: Layout,
+    tasks: [
+      { title: 'Content Strategy', priority: 'high', description: 'Define goals and content themes.' },
+      { title: 'Graphic Design', priority: 'medium', description: 'Create visuals for posts.' },
+      { title: 'Copywriting', priority: 'medium', description: 'Write captions and headlines.' },
+      { title: 'Scheduling Posts', priority: 'medium', description: 'Queue posts in the management tool.' },
+      { title: 'Performance Analysis', priority: 'low', description: 'Review campaign metrics.' },
+    ]
+  },
+  {
+    id: 'seo-audit',
+    name: 'SEO Audit & Optimization',
+    description: 'Tasks for improving search engine rankings.',
+    icon: Filter,
+    tasks: [
+      { title: 'Keyword Research', priority: 'high', description: 'Identify high-value keywords.' },
+      { title: 'On-Page Optimization', priority: 'high', description: 'Update meta tags and content structure.' },
+      { title: 'Technical SEO Audit', priority: 'medium', description: 'Check site speed and crawl errors.' },
+      { title: 'Backlink Analysis', priority: 'medium', description: 'Review existing backlink profile.' },
+    ]
+  },
+  {
+    id: 'email-blitz',
+    name: 'Email Marketing Blitz',
+    description: 'Quick setup for a high-impact email sequence.',
+    icon: Sparkles,
+    tasks: [
+      { title: 'Segment Audience', priority: 'high', description: 'Filter and clean the email list.' },
+      { title: 'A/B Test Subjects', priority: 'medium', description: 'Draft 2-3 subject line variations.' },
+      { title: 'Design Newsletter', priority: 'high', description: 'Create a mobile-responsive email template.' },
+      { title: 'Setup Automation', priority: 'medium', description: 'Configure triggers and drip sequences.' },
+    ]
+  }
 ];
 
 export function Projects() {
@@ -29,6 +82,8 @@ export function Projects() {
   const [newPriority, setNewPriority] = useState("medium");
   const [newDueDate, setNewDueDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -87,6 +142,34 @@ export function Projects() {
     }
   };
 
+  const handleApplyTemplate = async (template: typeof TEMPLATES[0]) => {
+    if (!user) return;
+    setIsSubmitting(true);
+    try {
+      const promises = template.tasks.map(task => 
+        addDoc(collection(db, `users/${user.uid}/projects`), {
+          userId: user.uid,
+          clientId: newClientId || null,
+          title: task.title,
+          description: task.description,
+          status: "todo",
+          priority: task.priority,
+          dueDate: newDueDate || null,
+          createdAt: new Date().toISOString()
+        })
+      );
+      await Promise.all(promises);
+      setIsAdding(false);
+      setShowTemplates(false);
+      setNewClientId("");
+      setNewDueDate("");
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}/projects`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const updateStatus = async (projectId: string, newStatus: string) => {
     if (!user) return;
     try {
@@ -108,20 +191,114 @@ export function Projects() {
     }
   };
 
+  const clearAllTasks = async () => {
+    if (!user) return;
+    setIsSubmitting(true);
+    try {
+      const promises = projects.map(p => deleteDoc(doc(db, `users/${user.uid}/projects`, p.id)));
+      await Promise.all(promises);
+      setIsClearing(false);
+    } catch (error) {
+      console.error("Failed to clear tasks:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 md:space-y-8 pb-20 md:pb-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Campaign Board</h1>
-          <p className="text-muted-foreground">Manage your marketing tasks and project lifecycle.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Campaign Board</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Manage your marketing tasks and project lifecycle.</p>
         </div>
-        <Button onClick={() => setIsAdding(!isAdding)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Task
-        </Button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          {projects.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-red-600 hover:bg-red-50 w-full sm:w-auto"
+              onClick={() => setIsClearing(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Clear Board
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => setShowTemplates(!showTemplates)} className="w-full sm:w-auto">
+            <Sparkles className="mr-2 h-4 w-4 text-primary" />
+            Templates
+          </Button>
+          <Button onClick={() => setIsAdding(!isAdding)} className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" />
+            New Task
+          </Button>
+        </div>
       </div>
 
       <AnimatePresence>
+        {isClearing && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          >
+            <Card className="max-w-sm w-full">
+              <CardHeader>
+                <CardTitle>Clear Board?</CardTitle>
+                <CardDescription>This will permanently delete all {projects.length} tasks on the board. This action cannot be undone.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsClearing(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={clearAllTasks} disabled={isSubmitting}>
+                  {isSubmitting ? "Clearing..." : "Delete All"}
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+        {showTemplates && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            {TEMPLATES.map(template => (
+              <Card 
+                key={template.id} 
+                className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all group"
+                onClick={() => handleApplyTemplate(template)}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                      <template.icon className="h-4 w-4" />
+                    </div>
+                    <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      Apply
+                    </Button>
+                  </div>
+                  <CardTitle className="text-sm mt-2">{template.name}</CardTitle>
+                  <CardDescription className="text-[10px]">{template.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-1">
+                    {template.tasks.slice(0, 3).map((t, i) => (
+                      <span key={i} className="text-[9px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                        {t.title}
+                      </span>
+                    ))}
+                    {template.tasks.length > 3 && (
+                      <span className="text-[9px] text-muted-foreground">+{template.tasks.length - 3} more</span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </motion.div>
+        )}
+
         {isAdding && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -134,7 +311,7 @@ export function Projects() {
                 <CardTitle className="text-lg">Create New Task</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleAddProject} className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <form onSubmit={handleAddProject} className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-sm font-medium">Task Title</label>
                     <Input 
@@ -198,7 +375,7 @@ export function Projects() {
         )}
       </AnimatePresence>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {COLUMNS.map(column => (
           <div key={column.id} className="space-y-4">
             <div className={cn("flex items-center justify-between p-2 rounded-lg", column.bg)}>

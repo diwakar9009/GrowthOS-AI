@@ -18,6 +18,8 @@ export function AICaptionGenerator() {
   const [clients, setClients] = useState<any[]>([]);
   const [niche, setNiche] = useState(profile?.niche || "");
   const [tone, setTone] = useState("Professional");
+  const [audience, setAudience] = useState("Indian (Gen Z & Millennials)");
+  const [format, setFormat] = useState("Standard Social Media Pack");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -38,18 +40,20 @@ export function AICaptionGenerator() {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Generate 3 creative social media captions and 15 relevant hashtags for the following:
+        contents: `As an expert Social Media Manager, generate high-engagement content for the following:
         Topic: ${topic}
         Client/Project: ${client || "General"}
         Niche: ${niche}
+        Audience Demographics: ${audience}
         Brand Voice/Tone: ${clientVoice || tone}
-        Audience: Indian (Include Hinglish variations where appropriate)
+        Desired Output Format: ${format}
         
-        Format the output clearly with:
-        - Option 1 (English)
-        - Option 2 (Hinglish/Casual)
-        - Option 3 (Short & Punchy)
-        - Hashtags (Categorized)`,
+        Please provide:
+        1. 3 Creative Social Media Captions (tailored to the audience and niche)
+        2. 15-20 Relevant Hashtags (Categorized: Broad, Niche, Community)
+        3. 3 Content Hook Ideas for Reels/Shorts
+        
+        Format the output clearly using Markdown headers.`,
       });
 
       const text = response.text || "No response from AI.";
@@ -150,12 +154,34 @@ export function AICaptionGenerator() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Niche (Optional)</label>
+              <label className="text-sm font-medium">Niche</label>
               <Input 
                 placeholder="e.g., Fitness, Tech, Food" 
                 value={niche}
                 onChange={(e) => setNiche(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Target Audience</label>
+              <Input 
+                placeholder="e.g., Gen Z, Tech Professionals" 
+                value={audience}
+                onChange={(e) => setAudience(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Output Format</label>
+              <select 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={format}
+                onChange={(e) => setFormat(e.target.value)}
+              >
+                <option>Standard Social Media Pack</option>
+                <option>Instagram Carousel Script</option>
+                <option>Short-form Video Script</option>
+                <option>Thread-style Content</option>
+                <option>Professional/LinkedIn Post</option>
+              </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Tone</label>
