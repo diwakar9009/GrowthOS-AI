@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight, Plus, Calendar as CalendarIcon, PenTool, Wrench, Target, Ear, FileText } from "lucide-react";
+import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight, Plus, Calendar as CalendarIcon, PenTool, Wrench, Target, Ear, FileText, IndianRupee, Users, Palette, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Button } from "./Button";
 import { MOCK_SUGGESTIONS, MOCK_TRENDS } from "@/constants";
@@ -7,7 +7,7 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 import { useEffect, useState } from "react";
-import { db, collection, query, orderBy, limit, onSnapshot, where } from "@/lib/firebase";
+import { db, collection, query, orderBy, limit, onSnapshot, where, handleFirestoreError, OperationType } from "@/lib/firebase";
 import { GoogleGenAI } from "@google/genai";
 import ReactMarkdown from "react-markdown";
 
@@ -18,16 +18,35 @@ export function Dashboard() {
   const [nextPost, setNextPost] = useState<any>(null);
   const [briefing, setBriefing] = useState<string | null>(null);
   const [loadingBriefing, setLoadingBriefing] = useState(false);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [teamCount, setTeamCount] = useState(0);
 
   const quickActions = [
     { name: "New Strategy", icon: Sparkles, href: "/tools", color: "bg-blue-500" },
+    { name: "Competitor", icon: Search, href: "/tools", color: "bg-orange-500" },
     { name: "Lead Scorer", icon: Target, href: "/tools", color: "bg-purple-500" },
-    { name: "Social Listening", icon: Ear, href: "/tools", color: "bg-orange-500" },
-    { name: "Campaign Brief", icon: FileText, href: "/tools", color: "bg-green-500" },
+    { name: "Brand Kit", icon: Palette, href: "/brand-kit", color: "bg-pink-500" },
   ];
 
   useEffect(() => {
     if (!user) return;
+
+    // Fetch invoices for revenue
+    const qInvoices = query(collection(db, `users/${user.uid}/invoices`), where("status", "==", "paid"));
+    const unsubscribeInvoices = onSnapshot(qInvoices, (snapshot) => {
+      const total = snapshot.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+      setTotalRevenue(total);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/invoices`);
+    });
+
+    // Fetch team count
+    const qTeam = query(collection(db, `users/${user.uid}/team`));
+    const unsubscribeTeam = onSnapshot(qTeam, (snapshot) => {
+      setTeamCount(snapshot.size + 1); // +1 for the owner
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/team`);
+    });
     
     // Fetch tasks
     const qTasks = query(
@@ -38,12 +57,16 @@ export function Dashboard() {
     const unsubscribeTasks = onSnapshot(qTasks, (snapshot) => {
       const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setRecentTasks(tasks);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/tasks`);
     });
 
     // Fetch client count
     const qClients = query(collection(db, `users/${user.uid}/clients`));
     const unsubscribeClients = onSnapshot(qClients, (snapshot) => {
       setClientCount(snapshot.size);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/clients`);
     });
 
     // Fetch next scheduled post
@@ -58,12 +81,16 @@ export function Dashboard() {
       if (!snapshot.empty) {
         setNextPost(snapshot.docs[0].data());
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/calendar`);
     });
 
     return () => {
       unsubscribeTasks();
       unsubscribeClients();
       unsubscribeCalendar();
+      unsubscribeInvoices();
+      unsubscribeTeam();
     };
   }, [user]);
 
@@ -103,21 +130,21 @@ export function Dashboard() {
 
       {/* AI Briefing & Quick Actions */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 border-primary/20 bg-gradient-to-br from-primary/5 to-background shadow-sm">
+        <Card className="lg:col-span-2 border-primary/20 bg-gradient-to-br from-primary/5 to-background shadow-sm overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold flex items-center">
-              <Sparkles className="mr-2 h-4 w-4 text-primary" />
+              <Sparkles className="mr-2 h-4 w-4 text-primary shrink-0" />
               AI Daily Briefing
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loadingBriefing ? (
               <div className="flex items-center space-x-2 text-sm text-muted-foreground py-4">
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
                 <span>Analyzing your recent activity...</span>
               </div>
             ) : briefing ? (
-              <div className="prose prose-sm max-w-none dark:prose-invert text-muted-foreground leading-relaxed">
+              <div className="prose prose-sm max-w-none dark:prose-invert text-muted-foreground leading-relaxed max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                 <ReactMarkdown>{briefing}</ReactMarkdown>
               </div>
             ) : (
@@ -126,15 +153,15 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-4 lg:grid-cols-1 gap-3 md:gap-4">
           {quickActions.map((action) => (
-            <Link key={action.name} to={action.href}>
-              <Card className="h-full hover:border-primary/50 transition-all group cursor-pointer active:scale-95">
-                <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-2">
-                  <div className={cn("p-2 rounded-lg text-white transition-transform group-hover:scale-110", action.color)}>
-                    <action.icon className="h-5 w-5" />
+            <Link key={action.name} to={action.href} className="w-full">
+              <Card className="h-full hover:border-primary/50 transition-all group cursor-pointer active:scale-95 border-primary/10">
+                <CardContent className="p-2 md:p-4 flex flex-col items-center justify-center text-center space-y-1 md:space-y-2">
+                  <div className={cn("p-1.5 md:p-2 rounded-lg text-white transition-transform group-hover:scale-110", action.color)}>
+                    <action.icon className="h-4 w-4 md:h-5 md:w-5" />
                   </div>
-                  <span className="text-xs font-bold">{action.name}</span>
+                  <span className="text-[10px] md:text-xs font-bold leading-tight">{action.name.split(' ')[0]}</span>
                 </CardContent>
               </Card>
             </Link>
@@ -143,25 +170,25 @@ export function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
         <Card className="bg-primary/5 border-primary/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
-            <Briefcase className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <IndianRupee className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{clientCount}</div>
-            <p className="text-xs text-muted-foreground">Managing {clientCount} brands</p>
+            <div className="text-2xl font-bold">₹{totalRevenue.toLocaleString('en-IN')}</div>
+            <p className="text-xs text-muted-foreground">Paid invoices</p>
           </CardContent>
         </Card>
-        <Card className="bg-orange-50 border-orange-100">
+        <Card className="bg-emerald-50 border-emerald-100">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-900">Daily Streak</CardTitle>
-            <Flame className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium text-emerald-900">Team Size</CardTitle>
+            <Users className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-900">{profile?.streak || 0} Days</div>
-            <p className="text-xs text-orange-700">Assistant is active</p>
+            <div className="text-2xl font-bold text-emerald-900">{teamCount} Members</div>
+            <p className="text-xs text-emerald-700">Collaborating now</p>
           </CardContent>
         </Card>
         <Card className="bg-blue-50 border-blue-100">
@@ -178,12 +205,12 @@ export function Dashboard() {
         </Card>
         <Card className="bg-purple-50 border-purple-100">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-900">Trend Score</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-600" />
+            <CardTitle className="text-sm font-medium text-purple-900">Active Clients</CardTitle>
+            <Briefcase className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-900">High</div>
-            <p className="text-xs text-purple-700">Market is active</p>
+            <div className="text-2xl font-bold text-purple-900">{clientCount} Brands</div>
+            <p className="text-xs text-purple-700">Managing {clientCount} brands</p>
           </CardContent>
         </Card>
       </div>

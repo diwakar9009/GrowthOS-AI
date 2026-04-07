@@ -18,6 +18,10 @@ import { Tools } from "./components/Tools";
 import { Profile } from "./components/Profile";
 import { Projects } from "./components/Projects";
 import { Assets } from "./components/Assets";
+import { Invoices } from "./components/Invoices";
+import { Team } from "./components/Team";
+import { BrandKit } from "./components/BrandKit";
+import { ClientPortal } from "./components/ClientPortal";
 import { LandingPage } from "./components/LandingPage";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 import { auth, googleProvider, signInWithPopup } from "./lib/firebase";
@@ -60,6 +64,10 @@ function AppContent() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/content-seo" element={<ContentOptimizer />} />
           <Route path="/seo-generator" element={<SEOGenerator />} />
+          <Route path="/invoices" element={<Invoices />} />
+          <Route path="/team" element={<Team />} />
+          <Route path="/brand-kit" element={<BrandKit />} />
+          <Route path="/portal/:clientId" element={<ClientPortal />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />

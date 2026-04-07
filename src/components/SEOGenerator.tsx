@@ -7,7 +7,7 @@ import { Sparkles, Copy, Check, Loader2, Search, TrendingUp, Hash, FileText, Typ
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/lib/AuthContext";
-import { db, collection, addDoc, query, orderBy, onSnapshot } from "@/lib/firebase";
+import { db, collection, addDoc, query, orderBy, onSnapshot, handleFirestoreError, OperationType } from "@/lib/firebase";
 
 export function SEOGenerator() {
   const { user } = useAuth();
@@ -65,7 +65,7 @@ export function SEOGenerator() {
           createdAt: new Date().toISOString()
         });
       } catch (e) {
-        console.error("Failed to save task:", e);
+        handleFirestoreError(e, OperationType.CREATE, `users/${user.uid}/tasks`);
       }
 
     } catch (error) {

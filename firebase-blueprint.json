@@ -45,6 +45,15 @@
         "brandVoice": { "type": "string", "description": "The unique tone/personality of the brand" },
         "status": { "type": "string", "enum": ["active", "on-hold", "completed"] },
         "progress": { "type": "integer", "description": "Campaign progress percentage" },
+        "analytics": {
+          "type": "object",
+          "properties": {
+            "followers": { "type": "integer" },
+            "engagement": { "type": "number" },
+            "reach": { "type": "integer" },
+            "conversionRate": { "type": "number" }
+          }
+        },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "name", "status", "createdAt"]
@@ -92,6 +101,49 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "name", "type", "url", "createdAt"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "A record of a client invoice.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "amount": { "type": "number" },
+        "dueDate": { "type": "string", "format": "date" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "paid", "overdue"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "clientId", "amount", "status", "createdAt"]
+    },
+    "TeamMember": {
+      "title": "Team Member",
+      "description": "A collaborator or team member invited to the agency.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["Admin", "Editor", "Viewer"] },
+        "status": { "type": "string", "enum": ["invited", "active"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "role", "status", "createdAt"]
+    },
+    "BrandKit": {
+      "title": "Brand Kit",
+      "description": "Visual identity assets for a brand or client.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "name": { "type": "string" },
+        "colors": { "type": "array", "items": { "type": "string" } },
+        "fonts": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "createdAt"]
     }
   },
   "firestore": {
@@ -118,6 +170,18 @@
     "/users/{userId}/assets/{assetId}": {
       "schema": "Asset",
       "description": "Brand assets and media library"
+    },
+    "/users/{userId}/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Client invoices and billing"
+    },
+    "/users/{userId}/team/{memberId}": {
+      "schema": "TeamMember",
+      "description": "Agency team members"
+    },
+    "/users/{userId}/brandkits/{kitId}": {
+      "schema": "BrandKit",
+      "description": "Brand visual identity kits"
     }
   }
 }

@@ -106,6 +106,8 @@ export function Projects() {
     const qClients = query(collection(db, `users/${user.uid}/clients`), orderBy("name", "asc"));
     const unsubscribeClients = onSnapshot(qClients, (snapshot) => {
       setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/clients`);
     });
 
     return () => {
@@ -375,9 +377,9 @@ export function Projects() {
         )}
       </AnimatePresence>
 
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="flex overflow-x-auto pb-6 -mx-4 px-4 lg:mx-0 lg:px-0 lg:grid lg:gap-6 lg:grid-cols-4 no-scrollbar snap-x snap-mandatory">
         {COLUMNS.map(column => (
-          <div key={column.id} className="space-y-4">
+          <div key={column.id} className="space-y-4 min-w-[280px] sm:min-w-[320px] lg:min-w-0 snap-center mr-4 lg:mr-0 last:mr-0">
             <div className={cn("flex items-center justify-between p-2 rounded-lg", column.bg)}>
               <div className="flex items-center space-x-2">
                 <column.icon className={cn("h-4 w-4", column.color)} />

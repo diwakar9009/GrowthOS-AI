@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Navigation } from "./Navigation";
-import { Flame, Menu, X, LayoutGrid, TrendingUp, PenTool, Wrench, User, BarChart3, Briefcase, Calendar as CalendarIcon, Layout as LayoutIcon, Image, Search, Sparkles } from "lucide-react";
+import { Flame, Menu, X, LayoutGrid, TrendingUp, PenTool, Wrench, User, BarChart3, Briefcase, Calendar as CalendarIcon, Layout as LayoutIcon, Image, Search, Sparkles, FileText, Users, Palette } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,9 @@ const navGroups = [
     items: [
       { name: "Assets", href: "/assets", icon: Image },
       { name: "Analytics", href: "/analytics", icon: BarChart3 },
+      { name: "Invoices", href: "/invoices", icon: FileText },
+      { name: "Team", href: "/team", icon: Users },
+      { name: "Brand Kit", href: "/brand-kit", icon: Palette },
       { name: "Tools", href: "/tools", icon: Wrench },
       { name: "Profile", href: "/profile", icon: User },
     ]
@@ -107,8 +110,8 @@ export function Layout({ children }: LayoutProps) {
         )}
       </AnimatePresence>
 
-      <main className="pb-20 pt-6 md:ml-64 md:pb-6 md:pt-6">
-        <div className="mx-auto max-w-5xl px-6">
+      <main className="pb-24 pt-6 md:ml-64 md:pb-6 md:pt-6">
+        <div className="mx-auto max-w-5xl px-4 md:px-6">
           {children}
         </div>
       </main>

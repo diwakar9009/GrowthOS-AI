@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, TrendingUp, PenTool, Wrench, User, Flame, BarChart3, Briefcase, Calendar as CalendarIcon, Layout, Image, Search, Sparkles } from "lucide-react";
+import { LayoutGrid, TrendingUp, PenTool, Wrench, User, Flame, BarChart3, Briefcase, Calendar as CalendarIcon, Layout, Image, Search, Sparkles, FileText, Users, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navGroups = [
@@ -26,6 +26,9 @@ const navGroups = [
     items: [
       { name: "Assets", href: "/assets", icon: Image },
       { name: "Analytics", href: "/analytics", icon: BarChart3 },
+      { name: "Invoices", href: "/invoices", icon: FileText },
+      { name: "Team", href: "/team", icon: Users },
+      { name: "Brand Kit", href: "/brand-kit", icon: Palette },
       { name: "Tools", href: "/tools", icon: Wrench },
       { name: "Profile", href: "/profile", icon: User },
     ]

@@ -106,50 +106,52 @@ export function ContentOptimizer() {
       </div>
 
       {/* Platform Switcher */}
-      <div className="flex space-x-2 p-1 bg-muted rounded-xl w-fit">
-        <button 
-          onClick={() => setActivePlatform("blog")}
-          className={cn(
-            "flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-            activePlatform === "blog" ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <FileText className="h-4 w-4" />
-          <span>Blog</span>
-        </button>
-        <button 
-          onClick={() => setActivePlatform("youtube")}
-          className={cn(
-            "flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-            activePlatform === "youtube" ? "bg-background shadow-sm text-red-600" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Youtube className="h-4 w-4" />
-          <span>YouTube</span>
-        </button>
-        <button 
-          onClick={() => setActivePlatform("instagram")}
-          className={cn(
-            "flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-            activePlatform === "instagram" ? "bg-background shadow-sm text-pink-600" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Instagram className="h-4 w-4" />
-          <span>Instagram</span>
-        </button>
+      <div className="flex overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar lg:mx-0 lg:px-0">
+        <div className="flex space-x-2 p-1 bg-muted rounded-xl w-fit shrink-0">
+          <button 
+            onClick={() => setActivePlatform("blog")}
+            className={cn(
+              "flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+              activePlatform === "blog" ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <FileText className="h-4 w-4" />
+            <span>Blog</span>
+          </button>
+          <button 
+            onClick={() => setActivePlatform("youtube")}
+            className={cn(
+              "flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+              activePlatform === "youtube" ? "bg-background shadow-sm text-red-600" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Youtube className="h-4 w-4" />
+            <span>YouTube</span>
+          </button>
+          <button 
+            onClick={() => setActivePlatform("instagram")}
+            className={cn(
+              "flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+              activePlatform === "instagram" ? "bg-background shadow-sm text-pink-600" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Instagram className="h-4 w-4" />
+            <span>Instagram</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Performance Overview */}
-        <Card className="lg:col-span-2 hover:shadow-lg transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="lg:col-span-2 hover:shadow-lg transition-all duration-300 border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-4">
             <div>
-              <CardTitle>Performance Trends</CardTitle>
+              <CardTitle className="text-xl font-bold">Performance Trends</CardTitle>
               <CardDescription>Recent {activePlatform} performance metrics.</CardDescription>
             </div>
-            <BarChart3 className="h-5 w-5 text-muted-foreground" />
+            <BarChart3 className="h-5 w-5 text-primary" />
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[300px] sm:h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               {activePlatform === "blog" ? (
                 <AreaChart data={blogData}>
@@ -222,10 +224,10 @@ export function ContentOptimizer() {
       </div>
 
       {/* SEO Assistant */}
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Card className="border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="border-primary/20 bg-primary/5 h-fit">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center space-x-2 text-xl">
               <Sparkles className="h-5 w-5 text-primary" />
               <span>AI SEO Assistant</span>
             </CardTitle>

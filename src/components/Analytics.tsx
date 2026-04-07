@@ -41,7 +41,7 @@ import {
   Activity,
   Clock,
   Target,
-  DollarSign,
+  IndianRupee,
   Calendar,
   Percent,
   TrendingDown,
@@ -49,7 +49,12 @@ import {
   Twitter,
   Linkedin,
   Facebook,
-  Link2
+  Link2,
+  AlertCircle,
+  Lightbulb,
+  ArrowRight,
+  ShieldCheck,
+  BarChart3
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/lib/AuthContext";
@@ -141,12 +146,106 @@ export function Analytics() {
   });
   const [loading, setLoading] = useState(true);
   const [selectedClients, setSelectedClients] = useState<string[]>(["all"]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isProjectFilterOpen, setIsProjectFilterOpen] = useState(false);
   const [dateRange, setDateRange] = useState("7d");
   const [clients, setClients] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [realtimeUsers, setRealtimeUsers] = useState(124);
   const [liveEvents, setLiveEvents] = useState<any[]>([]);
   const [liveCampaignStats, setLiveCampaignStats] = useState<Record<string, any>>({});
+
+  // Deterministic data generation based on selection
+  const getDeterministicData = () => {
+    const seed = selectedClients.join("") + selectedProjectId + dateRange;
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+      hash |= 0;
+    }
+    
+    const random = (s: number) => {
+      const x = Math.sin(s) * 10000;
+      return x - Math.floor(x);
+    };
+
+    const days = dateRange === "24h" ? 24 : dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
+    const labels = dateRange === "24h" ? Array.from({length: 24}, (_, i) => `${i}:00`) : 
+                  dateRange === "7d" ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] :
+                  Array.from({length: days}, (_, i) => `Day ${i+1}`);
+
+    const baseFollowers = 5000 + (hash % 2000);
+    const baseEngagement = 2000 + (hash % 1000);
+    const baseReach = 10000 + (hash % 5000);
+
+    const chartData = labels.map((name, i) => {
+      const s = hash + i;
+      return {
+        name,
+        followers: Math.floor(baseFollowers + (random(s) * 500 * (i + 1) / labels.length)),
+        engagement: Math.floor(baseEngagement + (random(s + 1) * 300)),
+        reach: Math.floor(baseReach + (random(s + 2) * 2000)),
+        conversionRate: Number((3 + random(s + 3) * 4).toFixed(1))
+      };
+    });
+
+    return chartData;
+  };
+
+  const currentGrowthData = getDeterministicData();
+
+  const getFunnelData = () => {
+    const lastData = currentGrowthData[currentGrowthData.length - 1];
+    return [
+      { name: 'Awareness (Reach)', value: lastData.reach, fill: '#3b82f6' },
+      { name: 'Consideration (Eng.)', value: lastData.engagement * 10, fill: '#10b981' },
+      { name: 'Conversion (Sales)', value: Math.floor(lastData.reach * (lastData.conversionRate / 100)), fill: '#f59e0b' },
+    ];
+  };
+
+  const funnelData = getFunnelData();
+
+  const getHealthScore = () => {
+    const lastData = currentGrowthData[currentGrowthData.length - 1];
+    const reachScore = Math.min(100, (lastData.reach / 20000) * 100);
+    const engScore = Math.min(100, (lastData.engagement / 5000) * 100);
+    const convScore = Math.min(100, (lastData.conversionRate / 10) * 100);
+    return Math.floor((reachScore + engScore + convScore) / 3);
+  };
+
+  const healthScore = getHealthScore();
+
+  const getRecommendations = () => {
+    const lastData = currentGrowthData[currentGrowthData.length - 1];
+    const recs = [];
+    if (lastData.conversionRate < 4) {
+      recs.push({
+        title: "Optimize Landing Page",
+        desc: "Your conversion rate is below benchmark. Consider A/B testing your CTA buttons.",
+        impact: "High"
+      });
+    }
+    if (lastData.engagement < 2500) {
+      recs.push({
+        title: "Boost Social Engagement",
+        desc: "Engagement is dipping. Try interactive polls or video content to re-engage users.",
+        impact: "Medium"
+      });
+    }
+    if (lastData.reach > 15000) {
+      recs.push({
+        title: "Scale Top Performers",
+        desc: "Reach is high! Double down on the campaigns driving this traffic.",
+        impact: "High"
+      });
+    }
+    return recs.length > 0 ? recs : [
+      { title: "Maintain Momentum", desc: "All metrics are stable. Continue current strategy.", impact: "Low" }
+    ];
+  };
+
+  const recommendations = getRecommendations();
 
   useEffect(() => {
     if (!user) return;
@@ -155,11 +254,23 @@ export function Analytics() {
       onSnapshot(collection(db, `users/${user.uid}/clients`), (s) => {
         setCounts(prev => ({ ...prev, clients: s.size }));
         setClients(s.docs.map(d => ({ id: d.id, ...d.data() })));
+      }, (error) => {
+        console.error("Analytics: Clients listener error", error);
       }),
-      onSnapshot(collection(db, `users/${user.uid}/projects`), (s) => setCounts(prev => ({ ...prev, projects: s.size }))),
-      onSnapshot(collection(db, `users/${user.uid}/assets`), (s) => setCounts(prev => ({ ...prev, assets: s.size }))),
+      onSnapshot(collection(db, `users/${user.uid}/projects`), (s) => {
+        setCounts(prev => ({ ...prev, projects: s.size }));
+        setProjects(s.docs.map(d => ({ id: d.id, ...d.data() })));
+      }, (error) => {
+        console.error("Analytics: Projects listener error", error);
+      }),
+      onSnapshot(collection(db, `users/${user.uid}/assets`), (s) => setCounts(prev => ({ ...prev, assets: s.size })), (error) => {
+        console.error("Analytics: Assets listener error", error);
+      }),
       onSnapshot(collection(db, `users/${user.uid}/tasks`), (s) => {
         setCounts(prev => ({ ...prev, tasks: s.size }));
+        setLoading(false);
+      }, (error) => {
+        console.error("Analytics: Tasks listener error", error);
         setLoading(false);
       })
     ];
@@ -226,15 +337,67 @@ export function Analytics() {
     }
   };
 
+  const toggleProject = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setIsProjectFilterOpen(false);
+  };
+
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+
   return (
     <div className="space-y-6 md:space-y-8 pb-20 md:pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col space-y-2">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Growth Intelligence</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Comprehensive Google Analytics-style insights and live campaign statistics.</p>
+          <p className="text-sm md:text-base text-muted-foreground">Comprehensive insights and live campaign statistics based on your active projects.</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+            {/* Project/Campaign Selector */}
+            <div className="relative whitespace-nowrap">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center space-x-2 h-9"
+                onClick={() => setIsProjectFilterOpen(!isProjectFilterOpen)}
+              >
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs md:text-sm">
+                  {selectedProjectId === "all" ? "All Campaigns" : selectedProject?.title || "Campaign"}
+                </span>
+              </Button>
+              
+              {isProjectFilterOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setIsProjectFilterOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-64 bg-background border rounded-md shadow-lg z-20 p-2 max-h-64 overflow-y-auto">
+                    <div 
+                      className={cn(
+                        "flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-muted transition-all",
+                        selectedProjectId === "all" && "bg-primary/10 text-primary"
+                      )}
+                      onClick={() => toggleProject("all")}
+                    >
+                      <span className="text-sm font-medium">All Campaigns</span>
+                    </div>
+                    <div className="h-px bg-border my-1" />
+                    {projects.map(p => (
+                      <div 
+                        key={p.id}
+                        className={cn(
+                          "flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-muted transition-all",
+                          selectedProjectId === p.id && "bg-primary/10 text-primary"
+                        )}
+                        onClick={() => toggleProject(p.id)}
+                      >
+                        <span className="text-sm font-medium truncate">{p.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
             <div className="flex items-center space-x-2 bg-background border rounded-md px-2 py-1.5 whitespace-nowrap">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <select 
@@ -255,10 +418,10 @@ export function Analytics() {
               className="flex items-center space-x-2 h-9"
               onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
-              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Users className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs md:text-sm">
                 {selectedClients.includes("all") 
-                  ? "All Properties" 
+                  ? "All Clients" 
                   : `${selectedClients.length} Selected`}
               </span>
             </Button>
@@ -283,7 +446,7 @@ export function Analytics() {
                     )}>
                       {selectedClients.includes("all") && <Check className="h-3 w-3 text-white" />}
                     </div>
-                    <span className="text-sm font-medium">All Properties</span>
+                    <span className="text-sm font-medium">All Clients</span>
                   </div>
                   
                   <div className="h-px bg-border my-1" />
@@ -317,282 +480,303 @@ export function Analytics() {
       </div>
     </div>
 
-      {/* Real-time & High-level Metrics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="relative overflow-hidden border-primary/20 bg-primary/5 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-default">
-          <div className="absolute top-2 right-2 flex items-center space-x-1">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-            </span>
-            <span className="text-[10px] font-bold text-red-500 uppercase">Live</span>
-          </div>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{realtimeUsers}</div>
-            <p className="text-xs text-muted-foreground mt-1">Users currently on site</p>
-            <div className="mt-4 h-1 w-full bg-primary/10 rounded-full overflow-hidden">
-              <motion.div 
-                className="h-full bg-primary"
-                animate={{ width: ["20%", "80%", "40%", "90%", "60%"] }}
-                transition={{ duration: 10, repeat: Infinity }}
-              />
+      {/* Campaign Health & Key Metrics */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 to-transparent hover:shadow-lg transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Campaign Health</span>
+                <span className={cn(
+                  "text-xs font-bold px-2 py-0.5 rounded-full mt-1",
+                  healthScore > 80 ? "bg-emerald-100 text-emerald-600" : 
+                  healthScore > 60 ? "bg-amber-100 text-amber-600" : "bg-rose-100 text-rose-600"
+                )}>
+                  {healthScore > 80 ? "Excellent" : healthScore > 60 ? "Good" : "Needs Attention"}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-center py-2">
+              <div className="relative h-24 w-24">
+                <svg className="h-full w-full" viewBox="0 0 36 36">
+                  <path
+                    className="stroke-muted fill-none"
+                    strokeWidth="3"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className={cn(
+                      "fill-none stroke-current transition-all duration-1000",
+                      healthScore > 80 ? "text-emerald-500" : 
+                      healthScore > 60 ? "text-amber-500" : "text-rose-500"
+                    )}
+                    strokeWidth="3"
+                    strokeDasharray={`${healthScore}, 100`}
+                    strokeLinecap="round"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center flex-col">
+                  <span className="text-xl font-black">{healthScore}%</span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <MetricCard 
-          title="Avg. Session Duration" 
-          value="2m 45s" 
-          change="+14%" 
+          title="Total Reach" 
+          value={`${(currentGrowthData[currentGrowthData.length - 1].reach / 1000).toFixed(1)}K`}
+          change="+12.5%" 
           trend="up" 
-          icon={<Clock className="h-4 w-4" />} 
-          description="Time spent per visit"
+          icon={<Users className="h-4 w-4" />} 
+          description={`Across ${selectedClients.includes("all") ? "all clients" : "selected clients"}`}
         />
         <MetricCard 
-          title="Bounce Rate" 
-          value="34.2%" 
-          change="-5.1%" 
+          title="Engagement" 
+          value={currentGrowthData[currentGrowthData.length - 1].engagement.toLocaleString()}
+          change="+8.4%" 
           trend="up" 
           icon={<Activity className="h-4 w-4" />} 
-          description="Lower is better"
+          description="Total interactions"
         />
         <MetricCard 
-          title="Goal Conversions" 
-          value="892" 
-          change="+22%" 
-          trend="up" 
+          title="Conversion Rate" 
+          value={`${currentGrowthData[currentGrowthData.length - 1].conversionRate}%`}
+          change="-0.2%" 
+          trend="down" 
           icon={<Target className="h-4 w-4" />} 
-          description="Key actions completed"
+          description="Goal completion rate"
         />
       </div>
 
       {/* Detailed Campaign Metrics */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-3">
         <MetricCard 
-          title="Conversion Rate" 
-          value="4.82%" 
-          change="+0.5%" 
+          title="CPA" 
+          value={`₹${(1000 + (currentGrowthData[currentGrowthData.length - 1].reach % 500)).toLocaleString()}`}
+          change="-₹175" 
           trend="up" 
-          icon={<Percent className="h-4 w-4" />} 
-          description="Visits to goal completion"
+          icon={<IndianRupee className="h-4 w-4" />} 
+          description="Cost per acquisition"
         />
         <MetricCard 
-          title="Cost Per Acquisition (CPA)" 
-          value="$12.45" 
-          change="-$2.10" 
-          trend="up" 
-          icon={<DollarSign className="h-4 w-4" />} 
-          description="Lower is better"
-        />
-        <MetricCard 
-          title="Return on Ad Spend (ROAS)" 
-          value="5.2x" 
+          title="ROAS" 
+          value={`${(4 + (currentGrowthData[currentGrowthData.length - 1].conversionRate / 2)).toFixed(1)}x`}
           change="+0.8x" 
           trend="up" 
           icon={<TrendingUp className="h-4 w-4" />} 
-          description="Revenue per dollar spent"
+          description="Return on ad spend"
         />
-      </div>
-
-      {/* Profitability Visualizations */}
-      {/* Detailed Profitability Metrics */}
-      <div className="grid gap-4 md:grid-cols-3">
         <MetricCard 
-          title="Customer Acquisition Cost (CAC)" 
-          value={`$${(Math.random() * 10 + 15).toFixed(2)}`}
+          title="CAC" 
+          value={`₹${(850 + (currentGrowthData[currentGrowthData.length - 1].reach % 300)).toFixed(0)}`}
           change="-8.4%"
           trend="up"
-          icon={<DollarSign className="h-4 w-4" />}
-          description="Average cost to acquire a new customer through paid campaigns."
+          icon={<Target className="h-4 w-4" />}
+          description="Customer acquisition cost"
         />
-        <MetricCard 
-          title="Customer Lifetime Value (CLV)" 
-          value={`$${(Math.random() * 200 + 450).toFixed(0)}`}
-          change="+15.2%"
-          trend="up"
-          icon={<TrendingUp className="h-4 w-4" />}
-          description="Predicted net profit attributed to the entire future relationship with a customer."
-        />
-        <MetricCard 
-          title="CLV:CAC Ratio" 
-          value={`${(Math.random() * 2 + 3).toFixed(1)}x`}
-          change="+2.1%"
-          trend="up"
-          icon={<Zap className="h-4 w-4" />}
-          description="Efficiency of marketing spend relative to customer value. Target: >3x."
-        />
-      </div>
-
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Card className="border-primary/20 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <span>ROAS Performance</span>
-              </CardTitle>
-              <CardDescription>Return on Ad Spend trend over the last 4 weeks.</CardDescription>
-            </div>
-            <ShareActions title="ROAS Performance" />
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={roasData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-                <Tooltip 
-                  cursor={{fill: 'rgba(0,0,0,0.02)'}}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                />
-                <Bar dataKey="value" fill="var(--color-primary)" radius={[4, 4, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="border-emerald-100 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center space-x-2">
-                <DollarSign className="h-5 w-5 text-emerald-600" />
-                <span>CPA Efficiency</span>
-              </CardTitle>
-              <CardDescription>Cost Per Acquisition trend (Lower is better).</CardDescription>
-            </div>
-            <ShareActions title="CPA Efficiency" />
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={cpaData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-                <Tooltip 
-                  cursor={{fill: 'rgba(0,0,0,0.02)'}}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                />
-                <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Acquisition Sources */}
-        <Card className="lg:col-span-1 hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default">
-          <CardHeader>
-            <CardTitle>Acquisition</CardTitle>
-            <CardDescription>Where your traffic comes from.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={acquisitionData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {acquisitionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              {acquisitionData.map(item => (
-                <div key={item.name} className="flex items-center space-x-2">
-                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-[10px] text-muted-foreground">{item.name} ({item.value}%)</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Behavior Flow / Growth */}
-        <Card className="lg:col-span-2 hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default group">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>User Behavior</CardTitle>
-              <CardDescription>Engagement and reach trends over time.</CardDescription>
-            </div>
-            <div className="flex items-center space-x-4">
-              <ShareActions title="User Behavior" />
-              <div className="flex space-x-2">
-                <div className="flex items-center space-x-1">
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                  <span className="text-[10px] text-muted-foreground">Reach</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span className="text-[10px] text-muted-foreground">Engagement</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="h-2 w-2 rounded-full bg-amber-500" />
-                  <span className="text-[10px] text-muted-foreground">Conv. Rate</span>
-                </div>
+        {/* Main Charts & Funnel */}
+        <div className="lg:col-span-2 space-y-8">
+          <Card className="overflow-hidden border-primary/10 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-muted/30">
+              <div className="space-y-1">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Growth Performance
+                </CardTitle>
+                <CardDescription className="text-[10px]">Reach, Engagement and Conversion trends</CardDescription>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={growthData}>
-                <defs>
-                  <linearGradient id="colorReach" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12}} dy={10} />
-                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 12}} unit="%" />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                />
-                <Area 
-                  yAxisId="left"
-                  type="monotone" 
-                  dataKey="reach" 
-                  stroke="var(--color-primary)" 
-                  fillOpacity={1} 
-                  fill="url(#colorReach)" 
-                  strokeWidth={2}
-                />
-                <Area 
-                  yAxisId="left"
-                  type="monotone" 
-                  dataKey="engagement" 
-                  stroke="#10b981" 
-                  fillOpacity={0} 
-                  strokeWidth={2}
-                />
-                <Line 
-                  yAxisId="right"
-                  type="monotone" 
-                  dataKey="conversionRate" 
-                  stroke="#f59e0b" 
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" }}
-                  activeDot={{ r: 6, strokeWidth: 0 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+              <ShareActions title="Growth" />
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="h-[350px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={currentGrowthData}>
+                    <defs>
+                      <linearGradient id="colorReach" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fontSize: 10, fill: '#94a3b8'}}
+                      dy={10}
+                    />
+                    <YAxis 
+                      yAxisId="left"
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fontSize: 10, fill: '#94a3b8'}}
+                    />
+                    <YAxis 
+                      yAxisId="right"
+                      orientation="right"
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fontSize: 10, fill: '#94a3b8'}}
+                      unit="%"
+                    />
+                    <Tooltip 
+                      contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)'}}
+                    />
+                    <Area 
+                      yAxisId="left"
+                      type="monotone" 
+                      dataKey="reach" 
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      fillOpacity={1} 
+                      fill="url(#colorReach)" 
+                    />
+                    <Area 
+                      yAxisId="left"
+                      type="monotone" 
+                      dataKey="engagement" 
+                      stroke="#10b981" 
+                      strokeWidth={3}
+                      fillOpacity={0} 
+                    />
+                    <Line 
+                      yAxisId="right"
+                      type="monotone" 
+                      dataKey="conversionRate" 
+                      stroke="#f59e0b" 
+                      strokeWidth={3}
+                      dot={{ r: 4, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-8 md:grid-cols-2">
+            {/* Funnel Analysis */}
+            <Card className="border-primary/10 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  Conversion Funnel
+                </CardTitle>
+                <CardDescription className="text-[10px]">Reach to Conversion drop-off</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {funnelData.map((item, i) => {
+                    const percentage = (item.value / funnelData[0].value) * 100;
+                    return (
+                      <div key={item.name} className="space-y-1">
+                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <span>{item.name}</span>
+                          <span>{item.value.toLocaleString()}</span>
+                        </div>
+                        <div className="h-8 w-full bg-muted rounded-md overflow-hidden relative">
+                          <motion.div 
+                            className="h-full"
+                            style={{ backgroundColor: item.fill, width: `${percentage}%` }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percentage}%` }}
+                            transition={{ duration: 1, delay: i * 0.2 }}
+                          />
+                          <div className="absolute inset-0 flex items-center justify-end pr-2">
+                            <span className="text-[10px] font-black text-white drop-shadow-sm">
+                              {percentage.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* AI Recommendations */}
+            <Card className="border-amber-100 bg-amber-50/20 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-amber-500" />
+                  AI Recommendations
+                </CardTitle>
+                <CardDescription className="text-[10px]">Actionable insights based on your data</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {recommendations.map((rec, i) => (
+                  <div key={i} className="p-3 rounded-lg bg-white border border-amber-100 shadow-sm group hover:border-amber-300 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-bold flex items-center gap-1">
+                          {rec.title}
+                          <span className={cn(
+                            "text-[8px] px-1.5 py-0.5 rounded-full uppercase",
+                            rec.impact === 'High' ? "bg-rose-100 text-rose-600" : "bg-blue-100 text-blue-600"
+                          )}>
+                            {rec.impact} Impact
+                          </span>
+                        </h4>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">{rec.desc}</p>
+                      </div>
+                      <ArrowRight className="h-3 w-3 text-amber-400 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Sidebar Metrics */}
+        <div className="space-y-8">
+          {/* Acquisition Sources */}
+          <Card className="hover:shadow-lg transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="text-base font-bold">Acquisition</CardTitle>
+              <CardDescription className="text-[10px]">Traffic source distribution</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={acquisitionData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {acquisitionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                {acquisitionData.map(item => (
+                  <div key={item.name} className="flex items-center space-x-2">
+                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-[10px] text-muted-foreground truncate">{item.name}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-8 grid-cols-1 lg:grid-cols-3">
         {/* Live Campaign Feed */}
         <Card className="lg:col-span-1 border-emerald-100 bg-emerald-50/30 hover:shadow-lg hover:scale-[1.01] transition-all duration-300 cursor-default">
           <CardHeader>
@@ -618,7 +802,7 @@ export function Analytics() {
                         "h-8 w-8 rounded-full flex items-center justify-center",
                         event.type === 'Purchase' ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-600"
                       )}>
-                        {event.type === 'Purchase' ? <DollarSign className="h-4 w-4" /> : <MousePointer2 className="h-4 w-4" />}
+                        {event.type === 'Purchase' ? <IndianRupee className="h-4 w-4" /> : <MousePointer2 className="h-4 w-4" />}
                       </div>
                       <div>
                         <p className="text-xs font-bold">{event.type}</p>

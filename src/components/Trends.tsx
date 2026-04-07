@@ -9,7 +9,7 @@ import { motion } from "motion/react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
-import { db, collection, addDoc, query, orderBy, onSnapshot } from "@/lib/firebase";
+import { db, collection, addDoc, query, orderBy, onSnapshot, handleFirestoreError, OperationType } from "@/lib/firebase";
 
 export function Trends() {
   const { profile, user } = useAuth();
@@ -31,6 +31,8 @@ export function Trends() {
     const q = query(collection(db, `users/${user.uid}/clients`), orderBy("name", "asc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/clients`);
     });
     return () => unsubscribe();
   }, [user]);
@@ -73,7 +75,7 @@ export function Trends() {
           createdAt: new Date().toISOString()
         });
       } catch (e) {
-        console.error("Failed to save task:", e);
+        handleFirestoreError(e, OperationType.CREATE, `users/${user.uid}/tasks`);
       }
 
     } catch (error) {
@@ -131,11 +133,14 @@ export function Trends() {
         <p className="text-sm md:text-base text-muted-foreground">Find viral ideas for your client campaigns.</p>
       </div>
 
-      <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-3">
-        <div className="md:col-span-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Campaign Context</CardTitle>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1 space-y-6">
+          <Card className="border-primary/20 bg-primary/5 h-fit">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center space-x-2 text-xl">
+                <Briefcase className="h-5 w-5 text-primary" />
+                <span>Campaign Context</span>
+              </CardTitle>
               <CardDescription>Get personalized trend ideas for your clients.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -247,8 +252,8 @@ export function Trends() {
           </Card>
 
           <div className="space-y-4">
-            <h3 className="font-semibold text-sm md:text-base">Current Trends</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-3">
+            <h3 className="font-bold text-xs md:text-sm uppercase tracking-wider text-muted-foreground px-1">Current Trends</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
               {MOCK_TRENDS.map((trend, index) => (
                 <motion.div
                   key={trend.keyword}
@@ -257,15 +262,17 @@ export function Trends() {
                   transition={{ delay: index * 0.1 }}
                 >
                   <Card 
-                    className="cursor-pointer hover:border-primary/50 transition-colors"
+                    className="cursor-pointer hover:border-primary/50 transition-all hover:shadow-md group"
                     onClick={() => generateIdeas(trend.keyword)}
                   >
                     <CardContent className="p-3 md:p-4 flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <TrendingUp className="h-4 w-4 text-primary" />
-                        <span className="text-xs md:text-sm font-medium">{trend.keyword}</span>
+                      <div className="flex items-center space-x-3 overflow-hidden">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <TrendingUp className="h-4 w-4" />
+                        </div>
+                        <span className="text-xs md:text-sm font-bold truncate">{trend.keyword}</span>
                       </div>
-                      <span className="text-[10px] text-muted-foreground uppercase">{trend.platform}</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground uppercase shrink-0">{trend.platform}</span>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -274,19 +281,36 @@ export function Trends() {
           </div>
         </div>
 
-        <Card className="md:col-span-2 h-fit">
-          <CardHeader>
-            <CardTitle>Content Ideas</CardTitle>
-            <CardDescription>AI-generated ideas based on the selected trend.</CardDescription>
+        <Card className="lg:col-span-2 h-fit border-primary/10">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-bold">Content Ideas</CardTitle>
+                <CardDescription>AI-generated ideas based on the selected trend.</CardDescription>
+              </div>
+              {ideas && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    navigator.clipboard.writeText(ideas);
+                    alert("Copied to clipboard!");
+                  }}
+                  className="hidden sm:flex"
+                >
+                  Copy All
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="flex h-[300px] flex-col items-center justify-center space-y-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-muted-foreground">Analyzing trend and generating ideas...</p>
+              <div className="flex h-[400px] flex-col items-center justify-center space-y-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-sm font-medium text-muted-foreground">Analyzing trend and generating ideas...</p>
               </div>
             ) : ideas ? (
-              <div className="prose prose-sm max-w-none dark:prose-invert">
+              <div className="prose prose-sm max-w-none dark:prose-invert max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
                 <ReactMarkdown>{ideas}</ReactMarkdown>
               </div>
             ) : (

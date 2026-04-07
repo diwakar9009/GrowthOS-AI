@@ -121,6 +121,37 @@ service cloud.firestore {
              isValidDateString(data.createdAt);
     }
 
+    function isValidInvoice(data, userId) {
+      return hasRequiredFields(data, ['userId', 'clientId', 'amount', 'status', 'createdAt']) &&
+             hasOnlyAllowedFields(data, ['userId', 'clientId', 'clientName', 'amount', 'dueDate', 'description', 'status', 'createdAt']) &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.amount is number &&
+             data.status in ['pending', 'paid', 'overdue'] &&
+             isValidDateString(data.createdAt);
+    }
+
+    function isValidTeamMember(data, userId) {
+      return hasRequiredFields(data, ['userId', 'email', 'role', 'status', 'createdAt']) &&
+             hasOnlyAllowedFields(data, ['userId', 'email', 'role', 'status', 'createdAt']) &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.role in ['Admin', 'Editor', 'Viewer'] &&
+             data.status in ['invited', 'active'] &&
+             isValidDateString(data.createdAt);
+    }
+
+    function isValidBrandKit(data, userId) {
+      return hasRequiredFields(data, ['userId', 'name', 'createdAt']) &&
+             hasOnlyAllowedFields(data, ['userId', 'clientId', 'name', 'colors', 'fonts', 'createdAt']) &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.colors is list &&
+             data.fonts is list &&
+             isValidDateString(data.createdAt);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -162,6 +193,27 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && isValidAsset(request.resource.data, userId);
         allow update: if isOwner(userId) && isValidAsset(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+      }
+
+      match /invoices/{invoiceId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidInvoice(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidInvoice(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+      }
+
+      match /team/{memberId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidTeamMember(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidTeamMember(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+      }
+
+      match /brandkits/{kitId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidBrandKit(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidBrandKit(request.resource.data, userId);
         allow delete: if isOwner(userId);
       }
     }

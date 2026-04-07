@@ -29,6 +29,8 @@ export function AICaptionGenerator() {
     const q = query(collection(db, `users/${user.uid}/clients`), orderBy("name", "asc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/clients`);
     });
     return () => unsubscribe();
   }, [user]);
@@ -71,7 +73,7 @@ export function AICaptionGenerator() {
           createdAt: new Date().toISOString()
         });
       } catch (e) {
-        console.error("Failed to save task:", e);
+        handleFirestoreError(e, OperationType.CREATE, `users/${user.uid}/tasks`);
       }
 
     } catch (error) {
@@ -107,16 +109,23 @@ export function AICaptionGenerator() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       <div className="flex flex-col space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">AI Caption Assistant</h1>
-        <p className="text-muted-foreground">Manage your client campaigns with AI-powered content.</p>
+        <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          AI Caption Assistant
+        </h1>
+        <p className="text-sm md:text-base text-muted-foreground font-medium">
+          Manage your client campaigns with AI-powered content.
+        </p>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-3">
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Campaign Details</CardTitle>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-1 border-primary/20 bg-primary/5 h-fit">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center space-x-2 text-xl">
+              <Briefcase className="h-5 w-5 text-primary" />
+              <span>Campaign Details</span>
+            </CardTitle>
             <CardDescription>Organize your work by client or project.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -217,21 +226,21 @@ export function AICaptionGenerator() {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="lg:col-span-2 h-fit border-primary/10">
+          <CardHeader className="flex flex-row items-center justify-between pb-4">
             <div>
-              <CardTitle>AI Output</CardTitle>
+              <CardTitle className="text-xl font-bold">AI Output</CardTitle>
               <CardDescription>Your generated captions and hashtags.</CardDescription>
             </div>
             {result && (
-              <Button variant="ghost" size="icon" onClick={copyToClipboard}>
+              <Button variant="ghost" size="icon" onClick={copyToClipboard} className="hover:bg-primary/10">
                 {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
               </Button>
             )}
           </CardHeader>
           <CardContent>
             {result ? (
-              <div className="prose prose-sm max-w-none dark:prose-invert">
+              <div className="prose prose-sm max-w-none dark:prose-invert max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
                 <ReactMarkdown>{result}</ReactMarkdown>
               </div>
             ) : (

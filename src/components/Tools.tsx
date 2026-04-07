@@ -53,7 +53,11 @@ import {
   ClipboardCheck,
   Zap as ZapIcon,
   FilePieChart,
-  UserPlus
+  UserPlus,
+  ChevronDown,
+  X,
+  AlertCircle,
+  ArrowLeft
 } from "lucide-react";
 import { GoogleGenAI } from "@google/genai";
 import { useAuth } from "@/lib/AuthContext";
@@ -62,14 +66,16 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "motion/react";
 
-type ToolType = 'ads' | 'seo' | 'email' | 'utm' | 'downloader' | 'compressor' | 'competitor' | 'influencer' | 'hashtag' | 'strategy' | 'roi' | 'abtest' | 'brand-voice' | 'product-desc' | 'bio-gen' | 'video-script' | 'review-reply' | 'social-listening' | 'lead-magnet' | 'email-sequence' | 'landing-page' | 'campaign-brief' | 'social-reply' | 'content-calendar' | 'ad-budget' | 'lead-scorer' | 'sales-script' | 'crisis-comms' | 'press-release' | 'link-bio' | 'advocacy' | 'content-curation' | 'social-audit' | 'post-optimizer' | 'community-mgr' | 'report-gen';
+type ToolType = 'ads' | 'seo' | 'email' | 'utm' | 'downloader' | 'compressor' | 'competitor' | 'influencer' | 'hashtag' | 'strategy' | 'roi' | 'abtest' | 'brand-voice' | 'product-desc' | 'bio-gen' | 'video-script' | 'review-reply' | 'social-listening' | 'lead-magnet' | 'email-sequence' | 'landing-page' | 'campaign-brief' | 'social-reply' | 'content-calendar' | 'ad-budget' | 'lead-scorer' | 'sales-script' | 'crisis-comms' | 'press-release' | 'link-bio' | 'advocacy' | 'content-curation' | 'social-audit' | 'post-optimizer' | 'community-mgr' | 'report-gen' | 'youtube-seo';
 
 export function Tools() {
   const { user } = useAuth();
   const [activeTool, setActiveTool] = useState<ToolType>('strategy');
+  const [mobileView, setMobileView] = useState<'list' | 'workspace'>('list');
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   // Tool Inputs
@@ -90,10 +96,22 @@ export function Tools() {
     }
   };
 
+  const isValidYouTubeUrl = (url: string) => {
+    const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+    return pattern.test(url);
+  };
+
   const runTool = async () => {
     if (!input1 || !user) return;
+    
+    if (activeTool === 'youtube-seo' && !isValidYouTubeUrl(input1)) {
+      setError("Please enter a valid YouTube URL (e.g., https://www.youtube.com/watch?v=...)");
+      return;
+    }
+
     setLoading(true);
     setResult(null);
+    setError(null);
     
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -106,16 +124,17 @@ export function Tools() {
       } else if (activeTool === 'email') {
         prompt = `Generate 5 catchy and high-open-rate email subject lines for: ${input1}. Context: ${input2 || 'Marketing Newsletter'}.`;
       } else if (activeTool === 'competitor') {
-        prompt = `Using real-time search data, analyze the digital marketing strategy for the following competitor or niche: ${input1}. 
+        prompt = `Using real-time search data, perform a deep-dive digital marketing analysis for the following competitor or niche: ${input1}. 
         Focus area: ${input2 || 'General Strategy'}.
         
-        Please provide:
-        1. **Estimated Target Audience**: Who are they targeting?
-        2. **Content Themes**: What are their main messaging pillars and content styles?
-        3. **Strategy Analysis**: How are they positioning themselves in the ${input2 || 'market'}?
-        4. **Counter-Strategies & Gaps**: Suggest specific ways to compete or gaps in their current approach that can be exploited.
+        Please provide a comprehensive report including:
+        1. **Target Audience Analysis**: Detailed breakdown of their primary and secondary audience segments, demographics, and psychographics.
+        2. **Content Themes & Messaging**: Analysis of their main content pillars, brand voice, and recurring messaging themes across social and web.
+        3. **Competitive Gaps**: Identify specific weaknesses, underserved audience segments, or missing content types in their current strategy.
+        4. **Counter-Strategies**: Actionable, step-by-step recommendations on how to out-position them and capture their market share.
+        5. **Unique Value Proposition (UVP)**: What makes them stand out, and how can we differentiate?
         
-        Use recent information and specific examples if available. Format the output clearly with Markdown headers.`;
+        Use recent information, specific examples, and data points if available. Format the output with clear Markdown headers and bullet points.`;
       } else if (activeTool === 'influencer') {
         prompt = `Find 5 potential influencers or content creators in the ${input1} niche. 
         Focus on: ${input2 || 'Instagram/YouTube'}.
@@ -140,13 +159,24 @@ export function Tools() {
         - Content mix (Educational, Promotional, Interactive)
         - Key performance indicators (KPIs) to track
         - Budget allocation suggestions.`;
+      } else if (activeTool === 'youtube-seo') {
+        prompt = `First, use Google Search to find and review the content of the YouTube video at ${input1}. 
+        You MUST attempt to find the video's current title, full description, and if available, the transcript or a detailed summary of the video content.
+        
+        Based on your detailed review of the actual video content (not just the URL), generate:
+        1. **3 SEO-Friendly Titles**: Catchy, high-CTR, and keyword-rich, specifically tailored to the video's unique value proposition.
+        2. **Optimized Description**: Including a strong hook, a 2-3 paragraph summary of the video's actual content, key takeaways, and clear CTAs.
+        3. **15 Trending Hashtags**: Highly relevant to the specific topics and keywords identified in the video.
+        4. **20 High-Volume Keywords/Tags**: Strategic tags derived from the video's transcript and metadata for maximum search visibility.
+        
+        Tailor all metadata for: ${input2 || 'General Audience'}.`;
       } else if (activeTool === 'roi') {
         prompt = `Calculate and analyze the Marketing ROI for a campaign with:
-        - Total Spend: ${input1}
-        - Total Revenue/Conversions: ${input2 || '0'}
+        - Total Spend: ₹${input1}
+        - Total Revenue/Conversions: ₹${input2 || '0'}
         Provide:
         - ROI Percentage
-        - Cost Per Acquisition (CPA)
+        - Cost Per Acquisition (CPA) in ₹
         - Return on Ad Spend (ROAS)
         - 3 Strategic suggestions to improve these metrics.`;
       } else if (activeTool === 'abtest') {
@@ -255,11 +285,11 @@ export function Tools() {
         - Best time to post (estimated)
         - Engagement prompt for each day.`;
       } else if (activeTool === 'ad-budget') {
-        prompt = `Optimize an ad budget of ${input1} for a ${input2 || 'Digital Marketing'} campaign. 
+        prompt = `Optimize an ad budget of ₹${input1} for a ${input2 || 'Digital Marketing'} campaign. 
         Provide:
         - Recommended allocation across channels (Meta, Google, TikTok, etc.)
         - Estimated Reach/Impressions
-        - Target CPC/CPA benchmarks
+        - Target CPC/CPA benchmarks in ₹
         - Scaling strategy (how to increase spend if successful).`;
       } else if (activeTool === 'lead-scorer') {
         prompt = `Analyze and score this lead: "${input1}". 
@@ -354,11 +384,22 @@ export function Tools() {
         setResult(utm);
       } else {
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: (activeTool === 'competitor' || activeTool === 'influencer' || activeTool === 'strategy' || activeTool === 'youtube-seo') 
+            ? "gemini-3.1-pro-preview" 
+            : "gemini-3-flash-preview",
           contents: prompt,
-          config: (activeTool === 'competitor' || activeTool === 'influencer' || activeTool === 'strategy') ? { tools: [{ googleSearch: {} }] } : undefined
+          config: (activeTool === 'competitor' || activeTool === 'influencer' || activeTool === 'strategy' || activeTool === 'youtube-seo') 
+            ? { tools: [{ googleSearch: {} }] } 
+            : undefined
         });
         const text = response.text || "No result generated.";
+        
+        if (activeTool === 'youtube-seo' && text.toLowerCase().includes("could not find") && text.toLowerCase().includes("video")) {
+          setError("We couldn't fetch the content for this video. Please ensure the URL is correct and the video is public.");
+          setLoading(false);
+          return;
+        }
+
         setResult(text);
 
         try {
@@ -374,8 +415,9 @@ export function Tools() {
         }
       }
     } catch (error) {
-      console.error("Tool error:", error);
-      setResult("Error running tool. Please try again.");
+      console.error("Tool Error:", error);
+      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}/tasks`);
+      setError("An unexpected error occurred while running the tool. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -429,6 +471,7 @@ export function Tools() {
     { id: 'review-reply', name: 'Review Reply', icon: MessageSquare, desc: 'AI customer responses', category: 'Content' },
     
     { id: 'seo', name: 'SEO Keywords', icon: Globe, desc: 'AI keyword research', category: 'Growth' },
+    { id: 'youtube-seo', name: 'YouTube SEO', icon: Video, desc: 'Optimize video for search', category: 'Growth' },
     { id: 'influencer', name: 'Influencer Find', icon: Users, desc: 'Discover creators', category: 'Growth' },
     { id: 'hashtag', name: 'Hashtag Gen', icon: Hash, desc: 'Viral hashtag sets', category: 'Growth' },
     
@@ -466,11 +509,14 @@ export function Tools() {
 
   const categories = ['Strategy', 'Content', 'Growth', 'Enterprise', 'Utilities'];
 
-  const newTools = ['social-listening', 'campaign-brief', 'lead-magnet', 'email-sequence', 'landing-page', 'social-reply', 'content-calendar', 'ad-budget', 'lead-scorer', 'sales-script', 'crisis-comms', 'press-release', 'link-bio', 'advocacy', 'content-curation', 'social-audit', 'post-optimizer', 'community-mgr', 'report-gen'];
+  const newTools = ['competitor', 'social-listening', 'campaign-brief', 'lead-magnet', 'email-sequence', 'landing-page', 'social-reply', 'content-calendar', 'ad-budget', 'lead-scorer', 'sales-script', 'crisis-comms', 'press-release', 'link-bio', 'advocacy', 'content-curation', 'social-audit', 'post-optimizer', 'community-mgr', 'report-gen', 'youtube-seo'];
 
   return (
-    <div className="space-y-6 md:space-y-8 pb-20 md:pb-0">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-4 md:space-y-8 pb-10">
+      <div className={cn(
+        "flex flex-col md:flex-row md:items-center justify-between gap-4",
+        mobileView === 'workspace' ? "hidden lg:flex" : "flex"
+      )}>
         <div className="flex flex-col space-y-1">
           <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             Marketing Intelligence Suite
@@ -483,17 +529,28 @@ export function Tools() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Search 30+ tools..." 
-            className="pl-9 bg-muted/50 border-none focus:ring-primary/20 h-11"
+            className="pl-9 pr-9 bg-muted/50 border-none focus:ring-primary/20 h-11 rounded-xl"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-4">
         {/* Tool Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="hidden lg:block space-y-6">
+        <div className={cn(
+          "lg:col-span-1 space-y-6",
+          mobileView === 'workspace' ? "hidden lg:block" : "block"
+        )}>
+          <div className="hidden lg:block space-y-6 sticky top-24">
             {categories.map(category => (
               <div key={category} className="space-y-2">
                 <h3 className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-4">
@@ -538,7 +595,11 @@ export function Tools() {
 
           {/* Mobile Tool Selector */}
           <div className="lg:hidden space-y-4">
-            <div className="flex overflow-x-auto pb-2 space-x-2 no-scrollbar">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Categories</h3>
+              <span className="text-[10px] text-primary font-medium">Swipe to explore</span>
+            </div>
+            <div className="flex overflow-x-auto pb-2 space-x-2 no-scrollbar -mx-4 px-4">
               {['All', ...categories].map((category) => (
                 <button
                   key={category}
@@ -546,10 +607,10 @@ export function Tools() {
                     setSearchQuery(category === 'All' ? '' : category);
                   }}
                   className={cn(
-                    "flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                    "flex-shrink-0 px-5 py-2 rounded-xl text-xs font-bold transition-all border whitespace-nowrap",
                     (searchQuery === category || (category === 'All' && searchQuery === ''))
-                      ? "bg-primary text-primary-foreground border-primary" 
-                      : "bg-muted text-muted-foreground border-transparent"
+                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                      : "bg-card text-muted-foreground border-border hover:border-primary/30"
                   )}
                 >
                   {category}
@@ -557,26 +618,43 @@ export function Tools() {
               ))}
             </div>
             
-            <div className="flex overflow-x-auto pb-4 space-x-3 no-scrollbar">
+            <div className="flex items-center justify-between px-1 mt-6">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tools</h3>
+              <span className="text-[10px] text-muted-foreground">{filteredTools.length} tools found</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
               {filteredTools.map((tool) => (
                 <button
                   key={tool.id}
                   onClick={() => {
                     setActiveTool(tool.id as ToolType);
                     setResult(null);
+                    setError(null);
                     setInput1("");
                     setInput2("");
                     setCompressedImage(null);
+                    setMobileView('workspace');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className={cn(
-                    "flex-shrink-0 flex flex-col items-center justify-center w-24 h-24 rounded-2xl transition-all border p-2 space-y-2",
+                    "flex flex-col items-center justify-center min-h-[100px] sm:aspect-square rounded-2xl transition-all border p-3 space-y-2 text-center group",
                     activeTool === tool.id 
-                      ? "bg-primary text-primary-foreground border-primary shadow-lg scale-105" 
-                      : "bg-card text-muted-foreground border-border hover:border-primary/50"
+                      ? "bg-primary/10 border-primary shadow-inner scale-[0.98]" 
+                      : "bg-card text-muted-foreground border-border hover:border-primary/30 hover:bg-primary/5"
                   )}
                 >
-                  <tool.icon className={cn("h-6 w-6", activeTool === tool.id ? "text-primary-foreground" : "text-primary")} />
-                  <span className="text-[10px] font-bold text-center leading-tight line-clamp-2">{tool.name}</span>
+                  <div className={cn(
+                    "p-2 sm:p-2.5 rounded-xl transition-all",
+                    activeTool === tool.id 
+                      ? "bg-primary text-primary-foreground shadow-md" 
+                      : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                  )}>
+                    <tool.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </div>
+                  <span className={cn(
+                    "text-[10px] sm:text-[11px] font-bold leading-tight line-clamp-2",
+                    activeTool === tool.id ? "text-primary" : ""
+                  )}>{tool.name}</span>
                 </button>
               ))}
             </div>
@@ -584,7 +662,10 @@ export function Tools() {
         </div>
 
         {/* Tool Workspace */}
-        <div className="lg:col-span-3">
+        <div className={cn(
+          "lg:col-span-3",
+          mobileView === 'list' ? "hidden lg:block" : "block"
+        )}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTool}
@@ -593,6 +674,25 @@ export function Tools() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-6"
             >
+              {/* Mobile Sticky Header */}
+              <div className="lg:hidden sticky top-0 z-30 -mx-4 px-4 py-3 bg-background/95 backdrop-blur-md border-b mb-4 flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-9 px-3 rounded-xl hover:bg-accent flex items-center gap-2 border-primary/20"
+                  onClick={() => setMobileView('list')}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="text-xs font-bold">Tools</span>
+                </Button>
+                <div className="flex flex-col overflow-hidden flex-1">
+                  <span className="text-[9px] font-bold text-primary uppercase tracking-widest">Active Tool</span>
+                  <h2 className="text-sm font-bold truncate">
+                    {tools.find(t => t.id === activeTool)?.name}
+                  </h2>
+                </div>
+              </div>
+
               {activeTool === 'downloader' ? (
             <Card>
               <CardHeader>
@@ -603,13 +703,17 @@ export function Tools() {
                 <CardDescription>Download reels, videos, and shorts instantly.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex space-x-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Input 
                     placeholder="Paste Instagram/YouTube URL here..." 
                     value={url}
-                    onChange={(e) => setUrl(e.target.value)}
+                    onChange={(e) => {
+                      setUrl(e.target.value);
+                      setError(null);
+                    }}
+                    className="flex-1"
                   />
-                  <Button onClick={handleDownload} disabled={downloading || !url}>
+                  <Button onClick={handleDownload} disabled={downloading || !url} className="w-full sm:w-auto">
                     {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Fetch"}
                   </Button>
                 </div>
@@ -637,7 +741,7 @@ export function Tools() {
                 <CardDescription>Reduce image size without losing quality.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 transition-colors hover:border-primary/50">
+                <div className="relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-4 sm:p-8 transition-colors hover:border-primary/50">
                   {compressing ? (
                     <div className="flex flex-col items-center space-y-2">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -681,13 +785,23 @@ export function Tools() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <span>{tools.find(t => t.id === activeTool)?.name} Assistant</span>
+            <Card className="border-primary/20 shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center space-x-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    {(() => {
+                      const Icon = tools.find(t => t.id === activeTool)?.icon || Sparkles;
+                      return <Icon className="h-5 w-5" />;
+                    })()}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-lg sm:text-xl">{tools.find(t => t.id === activeTool)?.name} Assistant</span>
+                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest lg:hidden">
+                      {tools.find(t => t.id === activeTool)?.category}
+                    </span>
+                  </div>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   {activeTool === 'strategy' && "Generate a full 30-day marketing strategy for any brand."}
                   {activeTool === 'roi' && "Calculate your campaign ROI, CPA, and ROAS instantly."}
                   {activeTool === 'abtest' && "Design a scientific A/B test to optimize your conversions."}
@@ -717,45 +831,66 @@ export function Tools() {
                   {activeTool === 'press-release' && "Write professional press releases for launches or major announcements."}
                   {activeTool === 'link-bio' && "Optimize your social media link-in-bio for maximum conversions."}
                   {activeTool === 'advocacy' && "Generate content for employees to share and boost brand reach."}
+                  {activeTool === 'youtube-seo' && "Analyze video content to generate high-ranking SEO metadata."}
+                  {activeTool === 'content-curation' && "Find and share relevant content to build authority."}
+                  {activeTool === 'social-audit' && "Analyze your social media profile performance and health."}
+                  {activeTool === 'post-optimizer' && "Determine the best times and formats to post for your audience."}
+                  {activeTool === 'community-mgr' && "Develop strategies for engagement and customer loyalty."}
+                  {activeTool === 'report-gen' && "Generate professional marketing reports from your data."}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      {activeTool === 'utm' ? "Base URL" : 
-                       activeTool === 'competitor' ? "Competitor/Niche" : 
-                       activeTool === 'influencer' ? "Niche/Topic" :
-                       activeTool === 'hashtag' ? "Post Topic" : 
-                       activeTool === 'roi' ? "Total Ad Spend ($)" :
-                       activeTool === 'abtest' ? "What are you testing?" :
-                       activeTool === 'strategy' ? "Brand/Product Name" : 
-                       activeTool === 'brand-voice' ? "Sample Text" :
-                       activeTool === 'product-desc' ? "Product Name" :
-                       activeTool === 'bio-gen' ? "Profile Name/Niche" :
-                       activeTool === 'video-script' ? "Video Topic" :
-                       activeTool === 'review-reply' ? "Customer Review" : 
-                       activeTool === 'social-listening' ? "Brand/Topic" :
-                       activeTool === 'lead-magnet' ? "Product/Offer" :
-                       activeTool === 'email-sequence' ? "Offer/Topic" :
-                       activeTool === 'landing-page' ? "Product/Service" :
-                       activeTool === 'campaign-brief' ? "Campaign Name" :
-                       activeTool === 'social-reply' ? "Social Comment" :
-                       activeTool === 'content-calendar' ? "Brand/Niche" :
-                       activeTool === 'ad-budget' ? "Total Budget ($)" : 
-                       activeTool === 'lead-scorer' ? "Lead Description" :
-                       activeTool === 'sales-script' ? "Product/Service" :
-                       activeTool === 'crisis-comms' ? "Crisis Description" :
-                       activeTool === 'press-release' ? "Announcement Topic" :
-                       activeTool === 'link-bio' ? "Brand/Profile" :
-                       activeTool === 'advocacy' ? "Company News/Topic" : "Product/Service Name"}
-                    </label>
-                    {activeTool === 'brand-voice' || activeTool === 'review-reply' || activeTool === 'social-reply' || activeTool === 'lead-scorer' || activeTool === 'crisis-comms' || activeTool === 'social-audit' ? (
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">
+                        {activeTool === 'utm' ? "Base URL" : 
+                         activeTool === 'competitor' ? "Competitor/Niche" : 
+                         activeTool === 'influencer' ? "Niche/Topic" :
+                         activeTool === 'hashtag' ? "Post Topic" : 
+                        activeTool === 'roi' ? "Total Ad Spend (₹)" :
+                        activeTool === 'abtest' ? "What are you testing?" :
+                        activeTool === 'strategy' ? "Brand/Product Name" : 
+                        activeTool === 'youtube-seo' ? "YouTube Video URL" :
+                        activeTool === 'brand-voice' ? "Sample Text" :
+                        activeTool === 'product-desc' ? "Product Name" :
+                        activeTool === 'bio-gen' ? "Profile Name/Niche" :
+                        activeTool === 'video-script' ? "Video Topic" :
+                        activeTool === 'review-reply' ? "Customer Review" : 
+                        activeTool === 'social-listening' ? "Brand/Topic" :
+                        activeTool === 'lead-magnet' ? "Product/Offer" :
+                        activeTool === 'email-sequence' ? "Offer/Topic" :
+                        activeTool === 'landing-page' ? "Product/Service" :
+                        activeTool === 'campaign-brief' ? "Campaign Name" :
+                        activeTool === 'social-reply' ? "Social Comment" :
+                        activeTool === 'content-calendar' ? "Brand/Niche" :
+                        activeTool === 'ad-budget' ? "Total Budget (₹)" : 
+                        activeTool === 'lead-scorer' ? "Lead Description" :
+                        activeTool === 'sales-script' ? "Product/Service" :
+                        activeTool === 'crisis-comms' ? "Crisis Description" :
+                        activeTool === 'press-release' ? "Announcement Topic" :
+                        activeTool === 'link-bio' ? "Brand/Profile" :
+                        activeTool === 'advocacy' ? "Company News/Topic" : "Product/Service Name"}
+                      </label>
+                      {input1 && (
+                        <button 
+                          onClick={() => setInput1("")}
+                          className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors flex items-center"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    {activeTool === 'brand-voice' || activeTool === 'review-reply' || activeTool === 'social-reply' || activeTool === 'lead-scorer' || activeTool === 'crisis-comms' || activeTool === 'social-audit' || activeTool === 'video-script' ? (
                       <textarea 
-                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder={activeTool === 'brand-voice' ? "Paste a sample of your writing..." : activeTool === 'social-reply' ? "Paste the social comment here..." : activeTool === 'lead-scorer' ? "Describe the lead (role, company, interaction)..." : activeTool === 'crisis-comms' ? "Describe the situation..." : activeTool === 'social-audit' ? "Describe the current social presence..." : "Paste the text here..."}
+                        className="flex min-h-[100px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all focus:border-primary/50"
+                        placeholder={activeTool === 'brand-voice' ? "Paste a sample of your writing..." : activeTool === 'social-reply' ? "Paste the social comment here..." : activeTool === 'lead-scorer' ? "Describe the lead (role, company, interaction)..." : activeTool === 'crisis-comms' ? "Describe the situation..." : activeTool === 'social-audit' ? "Describe the current social presence..." : activeTool === 'video-script' ? "What is the video about? (e.g., 5 tips for better sleep)" : "Paste the text here..."}
                         value={input1}
-                        onChange={(e) => setInput1(e.target.value)}
+                        onChange={(e) => {
+                          setInput1(e.target.value);
+                          setError(null);
+                        }}
                       />
                     ) : (
                       <Input 
@@ -763,13 +898,13 @@ export function Tools() {
                                      activeTool === 'competitor' ? "e.g., Nike, Coffee Shops" : 
                                      activeTool === 'influencer' ? "e.g., Sustainable Fashion" :
                                      activeTool === 'hashtag' ? "e.g., Vegan Recipes" : 
-                                     activeTool === 'roi' ? "e.g., 5000" :
+                                     activeTool === 'roi' ? "e.g., ₹5000" :
                                      activeTool === 'abtest' ? "e.g., Landing Page Headline" :
                                      activeTool === 'strategy' ? "e.g., Eco-Friendly Skincare" : 
+                                     activeTool === 'youtube-seo' ? "https://youtube.com/watch?v=..." :
                                      activeTool === 'product-desc' ? "e.g., Wireless Earbuds" :
                                      activeTool === 'bio-gen' ? "e.g., Digital Nomad" :
-                                     activeTool === 'video-script' ? "e.g., Morning Routine" : 
-                                     activeTool === 'ad-budget' ? "e.g., 10000" : 
+                                     activeTool === 'ad-budget' ? "e.g., ₹10000" : 
                                      activeTool === 'sales-script' ? "e.g., SEO Services" :
                                      activeTool === 'press-release' ? "e.g., New Office Opening" :
                                      activeTool === 'link-bio' ? "e.g., Fitness Coach" :
@@ -779,53 +914,73 @@ export function Tools() {
                                      activeTool === 'community-mgr' ? "e.g., SaaS Users Group" :
                                      activeTool === 'report-gen' ? "e.g., Acme Corp Q1" : "e.g., Luxury Watches"} 
                         value={input1}
-                        onChange={(e) => setInput1(e.target.value)}
+                        onChange={(e) => {
+                          setInput1(e.target.value);
+                          setError(null);
+                        }}
+                        className="h-11 sm:h-12 rounded-xl transition-all focus:ring-primary/20"
                       />
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      {activeTool === 'ads' ? "Target Platform" : 
-                       activeTool === 'seo' ? "Niche Focus" : 
-                       activeTool === 'email' ? "Campaign Goal" : 
-                       activeTool === 'competitor' ? "Analysis Focus" : 
-                       activeTool === 'influencer' ? "Platform" :
-                       activeTool === 'hashtag' ? "Platform" : 
-                       activeTool === 'roi' ? "Total Revenue ($)" :
-                       activeTool === 'abtest' ? "Target Metric" :
-                       activeTool === 'strategy' ? "Primary Goal" : 
-                       activeTool === 'brand-voice' ? "Focus Area" :
-                       activeTool === 'product-desc' ? "Target Audience" :
-                       activeTool === 'bio-gen' ? "Platform" :
-                       activeTool === 'video-script' ? "Video Goal" :
-                       activeTool === 'review-reply' ? "Sentiment" : 
-                       activeTool === 'social-listening' ? "Context" :
-                       activeTool === 'lead-magnet' ? "Target Audience" :
-                       activeTool === 'email-sequence' ? "Goal" :
-                       activeTool === 'landing-page' ? "Primary Goal" :
-                       activeTool === 'campaign-brief' ? "Goal" :
-                       activeTool === 'social-reply' ? "Brand Tone" :
-                       activeTool === 'content-calendar' ? "Platforms" :
-                       activeTool === 'ad-budget' ? "Campaign Type" : 
-                       activeTool === 'lead-scorer' ? "Industry/Context" :
-                       activeTool === 'sales-script' ? "Script Type" :
-                       activeTool === 'crisis-comms' ? "Severity" :
-                       activeTool === 'press-release' ? "Announcement Type" :
-                       activeTool === 'link-bio' ? "Primary Goal" :
-                       activeTool === 'advocacy' ? "Tone" : 
-                       activeTool === 'content-curation' ? "Target Audience" :
-                       activeTool === 'social-audit' ? "Platforms to Audit" :
-                       activeTool === 'post-optimizer' ? "Target Platform" :
-                       activeTool === 'community-mgr' ? "Primary Goal" :
-                       activeTool === 'report-gen' ? "Key Results/Metrics" : "Source (e.g., facebook)"}
-                    </label>
+                  <div className={cn(
+                    "space-y-2",
+                    (activeTool === 'youtube-seo' || activeTool === 'utm' || activeTool === 'video-script' || activeTool === 'brand-voice' || activeTool === 'review-reply' || activeTool === 'social-reply' || activeTool === 'lead-scorer' || activeTool === 'crisis-comms' || activeTool === 'social-audit') ? "sm:col-span-2" : "sm:col-span-1"
+                  )}>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">
+                        {activeTool === 'ads' ? "Target Platform" : 
+                         activeTool === 'seo' ? "Niche Focus" : 
+                         activeTool === 'email' ? "Campaign Goal" : 
+                         activeTool === 'competitor' ? "Analysis Focus" : 
+                         activeTool === 'influencer' ? "Platform" :
+                         activeTool === 'hashtag' ? "Platform" : 
+                         activeTool === 'youtube-seo' ? "Target Audience / Niche" :
+                         activeTool === 'roi' ? "Total Revenue (₹)" :
+                         activeTool === 'abtest' ? "Target Metric" :
+                         activeTool === 'strategy' ? "Primary Goal" : 
+                         activeTool === 'brand-voice' ? "Focus Area" :
+                         activeTool === 'product-desc' ? "Target Audience" :
+                         activeTool === 'bio-gen' ? "Platform" :
+                         activeTool === 'video-script' ? "Video Goal" :
+                         activeTool === 'review-reply' ? "Sentiment" : 
+                         activeTool === 'social-listening' ? "Context" :
+                         activeTool === 'lead-magnet' ? "Target Audience" :
+                         activeTool === 'email-sequence' ? "Goal" :
+                         activeTool === 'landing-page' ? "Primary Goal" :
+                         activeTool === 'campaign-brief' ? "Goal" :
+                         activeTool === 'social-reply' ? "Brand Tone" :
+                         activeTool === 'content-calendar' ? "Platforms" :
+                         activeTool === 'ad-budget' ? "Campaign Type" : 
+                         activeTool === 'lead-scorer' ? "Industry/Context" :
+                         activeTool === 'sales-script' ? "Script Type" :
+                         activeTool === 'crisis-comms' ? "Severity" :
+                         activeTool === 'press-release' ? "Announcement Type" :
+                         activeTool === 'link-bio' ? "Primary Goal" :
+                         activeTool === 'advocacy' ? "Tone" : 
+                         activeTool === 'content-curation' ? "Target Audience" :
+                         activeTool === 'social-audit' ? "Platforms to Audit" :
+                         activeTool === 'post-optimizer' ? "Target Platform" :
+                         activeTool === 'community-mgr' ? "Primary Goal" :
+                         activeTool === 'report-gen' ? "Key Results/Metrics" : "Source (e.g., facebook)"}
+                      </label>
+                      {input2 && (
+                        <button 
+                          onClick={() => setInput2("")}
+                          className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors flex items-center"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Clear
+                        </button>
+                      )}
+                    </div>
                     <Input 
                       placeholder={activeTool === 'competitor' ? "e.g., Social Media, Pricing" : 
                                    activeTool === 'influencer' ? "e.g., Instagram, TikTok" :
                                    activeTool === 'hashtag' ? "e.g., Instagram, Twitter" : 
-                                   activeTool === 'roi' ? "e.g., 15000" :
+                                   activeTool === 'roi' ? "e.g., ₹15000" :
                                    activeTool === 'abtest' ? "e.g., Conversion Rate" :
                                    activeTool === 'strategy' ? "e.g., Sales, Brand Awareness" : 
+                                   activeTool === 'youtube-seo' ? "e.g., Tech Enthusiasts" :
                                    activeTool === 'brand-voice' ? "e.g., Professional, Bold" :
                                    activeTool === 'product-desc' ? "e.g., Busy Professionals" :
                                    activeTool === 'bio-gen' ? "e.g., Instagram" :
@@ -839,14 +994,42 @@ export function Tools() {
                                    activeTool === 'link-bio' ? "e.g., Drive Sales" :
                                    activeTool === 'advocacy' ? "e.g., Enthusiastic" : "e.g., Instagram, Real Estate, Sale"} 
                       value={input2}
-                      onChange={(e) => setInput2(e.target.value)}
+                      onChange={(e) => {
+                        setInput2(e.target.value);
+                        setError(null);
+                      }}
+                      className="h-11 sm:h-12 rounded-xl"
                     />
                   </div>
                 </div>
-                <Button className="w-full shadow-lg shadow-primary/20" onClick={runTool} disabled={loading || !input1}>
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wrench className="mr-2 h-4 w-4" />}
-                  Run {tools.find(t => t.id === activeTool)?.name}
+                <Button 
+                  className="w-full h-12 sm:h-14 text-sm sm:text-lg font-bold shadow-lg shadow-primary/20 rounded-xl transition-all active:scale-95" 
+                  onClick={runTool} 
+                  disabled={loading || !input1}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      Run AI Tool
+                    </>
+                  )}
                 </Button>
+
+                {error && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="flex items-center space-x-2 p-3 rounded-lg bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20"
+                  >
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{error}</span>
+                  </motion.div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -854,19 +1037,33 @@ export function Tools() {
       </AnimatePresence>
 
           {result && (
-            <Card className="border-primary/20 bg-primary/5">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Result</CardTitle>
-                <Button variant="ghost" size="icon" onClick={handleCopy}>
-                  {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="prose prose-sm max-w-none dark:prose-invert text-sm font-sans leading-relaxed">
-                  <ReactMarkdown>{result}</ReactMarkdown>
-                </div>
-              </CardContent>
-            </Card>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mt-8"
+            >
+              <Card className="border-primary/20 bg-primary/5 shadow-xl shadow-primary/5 overflow-hidden">
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-4">
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center space-x-2 text-xl">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      <span>Optimized Results</span>
+                    </CardTitle>
+                    <CardDescription>Your AI-generated marketing content.</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleCopy} className="flex items-center space-x-2 w-full sm:w-auto justify-center h-10 sm:h-9">
+                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                    <span>{copied ? "Copied!" : "Copy All"}</span>
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-4 sm:p-6">
+                  <div className="prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:text-primary prose-strong:text-foreground overflow-y-auto overflow-x-auto max-h-[600px] pr-2 custom-scrollbar">
+                    <ReactMarkdown>{result}</ReactMarkdown>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           )}
         </div>
       </div>

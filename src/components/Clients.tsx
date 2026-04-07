@@ -4,8 +4,9 @@ import { db, collection, query, orderBy, onSnapshot, addDoc, doc, updateDoc, del
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Button } from "./Button";
 import { Input } from "./Input";
-import { Plus, Briefcase, Mail, Target, Trash2, ExternalLink, Loader2, CheckCircle2, Clock, Sparkles } from "lucide-react";
+import { Plus, Briefcase, Mail, Target, Trash2, ExternalLink, Loader2, CheckCircle2, Clock, Sparkles, Layout } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 export function Clients() {
@@ -266,6 +267,11 @@ export function Clients() {
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <ExternalLink className="h-4 w-4" />
                       </Button>
+                      <Link to={`/portal/${client.id}`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" title="Client Portal">
+                          <Layout className="h-4 w-4" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </CardContent>

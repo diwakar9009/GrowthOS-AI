@@ -44,12 +44,16 @@ export function Calendar() {
     const unsubscribeEvents = onSnapshot(qEvents, (snapshot) => {
       setEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/calendar`);
     });
 
     // Fetch clients for the dropdown
     const qClients = query(collection(db, `users/${user.uid}/clients`), orderBy("name", "asc"));
     const unsubscribeClients = onSnapshot(qClients, (snapshot) => {
       setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/clients`);
     });
 
     return () => {

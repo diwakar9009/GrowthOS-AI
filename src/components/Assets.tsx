@@ -50,6 +50,8 @@ export function Assets() {
     const qClients = query(collection(db, `users/${user.uid}/clients`), orderBy("name", "asc"));
     const unsubscribeClients = onSnapshot(qClients, (snapshot) => {
       setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/clients`);
     });
 
     return () => {
