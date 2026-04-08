@@ -48,10 +48,12 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <div className="no-print">
+        <Navigation />
+      </div>
       
       {/* Mobile Top Header */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background px-6 md:hidden">
+      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background px-6 md:hidden no-print">
         <div className="flex items-center space-x-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Flame className="h-5 w-5" />
@@ -110,8 +112,8 @@ export function Layout({ children }: LayoutProps) {
         )}
       </AnimatePresence>
 
-      <main className="pb-24 pt-6 md:ml-64 md:pb-6 md:pt-6">
-        <div className="mx-auto max-w-5xl px-4 md:px-6">
+      <main className="pb-24 pt-6 md:ml-64 md:pb-6 md:pt-6 print:ml-0 print:pt-0">
+        <div className="mx-auto max-w-5xl px-4 md:px-6 print:max-w-none print:px-0">
           {children}
         </div>
       </main>

@@ -57,7 +57,8 @@ import {
   ChevronDown,
   X,
   AlertCircle,
-  ArrowLeft
+  ArrowLeft,
+  Printer
 } from "lucide-react";
 import { GoogleGenAI } from "@google/genai";
 import { useAuth } from "@/lib/AuthContext";
@@ -66,7 +67,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "motion/react";
 
-type ToolType = 'ads' | 'seo' | 'email' | 'utm' | 'downloader' | 'compressor' | 'competitor' | 'influencer' | 'hashtag' | 'strategy' | 'roi' | 'abtest' | 'brand-voice' | 'product-desc' | 'bio-gen' | 'video-script' | 'review-reply' | 'social-listening' | 'lead-magnet' | 'email-sequence' | 'landing-page' | 'campaign-brief' | 'social-reply' | 'content-calendar' | 'ad-budget' | 'lead-scorer' | 'sales-script' | 'crisis-comms' | 'press-release' | 'link-bio' | 'advocacy' | 'content-curation' | 'social-audit' | 'post-optimizer' | 'community-mgr' | 'report-gen' | 'youtube-seo';
+type ToolType = 'ads' | 'seo' | 'email' | 'utm' | 'downloader' | 'compressor' | 'competitor' | 'influencer' | 'hashtag' | 'strategy' | 'roi' | 'abtest' | 'brand-voice' | 'product-desc' | 'bio-gen' | 'video-script' | 'review-reply' | 'social-listening' | 'lead-magnet' | 'email-sequence' | 'landing-page' | 'campaign-brief' | 'social-reply' | 'content-calendar' | 'ad-budget' | 'lead-scorer' | 'sales-script' | 'crisis-comms' | 'press-release' | 'link-bio' | 'advocacy' | 'content-curation' | 'social-audit' | 'post-optimizer' | 'community-mgr' | 'report-gen' | 'youtube-seo' | 'market-research' | 'content-repurpose' | 'keyword-gap';
 
 export function Tools() {
   const { user } = useAuth();
@@ -96,6 +97,10 @@ export function Tools() {
     }
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const isValidYouTubeUrl = (url: string) => {
     const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
     return pattern.test(url);
@@ -118,13 +123,30 @@ export function Tools() {
       let prompt = "";
 
       if (activeTool === 'ads') {
-        prompt = `Generate 3 high-converting ad copies for ${input1}. Target Platform: ${input2 || 'Google/Meta'}. Include Headline, Primary Text, and CTA.`;
+        prompt = `Perform professional internet research on current high-performing ad trends for: "${input1}". 
+        Target Platform: ${input2 || 'Google/Meta'}.
+        Using real-time search data, generate 3 high-converting ad copies including:
+        - Catchy Headlines
+        - Benefit-driven Primary Text
+        - Strategic CTAs
+        - Analysis of why these will work based on current market trends.`;
       } else if (activeTool === 'seo') {
-        prompt = `Generate a list of 10 high-intent SEO keywords and 3 blog title ideas for the topic: ${input1}. Focus on ${input2 || 'general'} niche.`;
+        prompt = `Perform a deep-dive SEO and keyword research for the topic: "${input1}". 
+        Focus Niche: ${input2 || 'General'}.
+        Using real-time search data, provide:
+        - 10 High-intent, trending SEO keywords with estimated difficulty
+        - 5 Long-tail keyword opportunities
+        - 3 Blog title ideas optimized for current search trends
+        - Content structure recommendations for the top keyword.`;
       } else if (activeTool === 'email') {
-        prompt = `Generate 5 catchy and high-open-rate email subject lines for: ${input1}. Context: ${input2 || 'Marketing Newsletter'}.`;
+        prompt = `Generate 5 high-open-rate email subject lines and a professional email body for: "${input1}". 
+        Context: ${input2 || 'Marketing Newsletter'}.
+        Using real-time data on email marketing trends, provide:
+        - 5 Subject line variations (A/B test ideas)
+        - A structured email body with a clear hook, value, and CTA
+        - Personalization suggestions.`;
       } else if (activeTool === 'competitor') {
-        prompt = `Using real-time search data, perform a deep-dive digital marketing analysis for the following competitor or niche: ${input1}. 
+        prompt = `Using professional internet search and real-time data, perform a deep-dive digital marketing analysis for: "${input1}". 
         Focus area: ${input2 || 'General Strategy'}.
         
         Please provide a comprehensive report including:
@@ -134,15 +156,16 @@ export function Tools() {
         4. **Counter-Strategies**: Actionable, step-by-step recommendations on how to out-position them and capture their market share.
         5. **Unique Value Proposition (UVP)**: What makes them stand out, and how can we differentiate?
         
-        Use recent information, specific examples, and data points if available. Format the output with clear Markdown headers and bullet points.`;
+        Use recent information, specific examples, and data points if available.`;
       } else if (activeTool === 'influencer') {
-        prompt = `Find 5 potential influencers or content creators in the ${input1} niche. 
-        Focus on: ${input2 || 'Instagram/YouTube'}.
-        Provide:
-        - Creator type (Micro/Macro)
-        - Content style
-        - Why they are a good fit
-        - Estimated engagement level.`;
+        prompt = `Perform professional internet research to find 10 potential influencers or content creators in the niche: "${input1}". 
+        Platform Focus: ${input2 || 'Instagram/YouTube/TikTok'}.
+        Using real-time search, provide for each:
+        - Name & Handle
+        - Creator type (Micro/Macro/Mega)
+        - Content style & Audience alignment
+        - Estimated engagement rates & recent viral content
+        - Why they are a strategic fit for this niche.`;
       } else if (activeTool === 'hashtag') {
         prompt = `Generate a strategic set of 30 hashtags for a post about ${input1}. 
         Platform: ${input2 || 'Instagram'}.
@@ -227,13 +250,14 @@ export function Tools() {
         - Addresses specific points
         - Maintains a helpful brand tone.`;
       } else if (activeTool === 'social-listening') {
-        prompt = `Perform a social listening analysis for the brand/topic: "${input1}". 
+        prompt = `Perform a professional social listening and sentiment analysis for the brand/topic: "${input1}". 
         Context: ${input2 || 'General Sentiment'}.
-        Provide:
-        - Estimated Sentiment Analysis (Positive/Neutral/Negative)
-        - Key Trending Conversations/Themes
-        - Potential Brand Risks or Opportunities
-        - Suggested engagement strategy.`;
+        Using real-time internet search and social media data, provide:
+        - Detailed Sentiment Analysis (Positive/Neutral/Negative) with recent examples
+        - Top 5 Trending Conversations & Hashtags
+        - Major Customer Pain Points, Complaints, or Praises
+        - Viral mentions or recent news events
+        - Strategic engagement recommendations.`;
       } else if (activeTool === 'lead-magnet') {
         prompt = `Generate 5 high-converting lead magnet ideas for: ${input1}. 
         Target Audience: ${input2 || 'Potential Customers'}.
@@ -261,14 +285,14 @@ export function Tools() {
         - Social Proof placement ideas
         - Primary and Secondary CTAs.`;
       } else if (activeTool === 'campaign-brief') {
-        prompt = `Create a professional Marketing Campaign Brief for: ${input1}. 
+        prompt = `Perform professional internet research and create a Marketing Campaign Brief for: "${input1}". 
         Campaign Goal: ${input2 || 'Product Launch'}.
-        Include:
+        Using real-time market data, include:
         - Campaign Objectives (SMART goals)
-        - Target Audience Personas
-        - Key Messaging & Value Prop
-        - Channel Strategy (Social, Email, Ads)
-        - Creative Requirements.`;
+        - Detailed Target Audience Personas
+        - Key Messaging & Value Proposition
+        - Channel Strategy (Social, Email, Ads) based on current platform trends
+        - Creative Requirements & Budget allocation suggestions.`;
       } else if (activeTool === 'social-reply') {
         prompt = `Generate 3 variations of a social media reply for this comment: "${input1}". 
         Brand Tone: ${input2 || 'Friendly & Professional'}.
@@ -346,13 +370,15 @@ export function Tools() {
         - Why it's relevant to the audience
         - A "Takeaway" or "Insight" to add value to the share.`;
       } else if (activeTool === 'social-audit') {
-        prompt = `Perform a comprehensive social media audit for: "${input1}". 
-        Platform(s): ${input2 || 'All'}.
-        Analyze:
-        - Profile Optimization (Bio, Links, Visuals)
-        - Content Performance (Engagement, Consistency)
-        - Audience Growth & Demographics
-        - 3 Immediate improvements to boost results.`;
+        prompt = `Perform a professional deep-dive social media audit for the profile: "${input1}". 
+        Competitors/Platforms: ${input2 || 'Identify top 3 competitors automatically'}.
+        Using real-time internet search and social media data, provide a comprehensive report including:
+        1. **Profile Optimization**: Detailed analysis of Bio, Profile Picture, Cover Image, Links, and overall branding consistency.
+        2. **Content Performance**: Analysis of recent posts, engagement rates, content variety, and visual quality.
+        3. **Audience Engagement**: How the brand interacts with followers, response quality, and community sentiment.
+        4. **Competitive Benchmarking**: Analyze 2-3 top competitors (either provided or identified). Compare their content strategy, engagement tactics, and audience sentiment versus the target profile.
+        5. **Mobile Responsiveness Audit**: Evaluate the profile's mobile-first experience. Are the links easy to tap? Is the bio readable? Are the visuals optimized for vertical scrolling?
+        6. **Actionable Recommendations**: Provide a clear roadmap on how to out-perform the identified competitors and specific steps to enhance mobile responsiveness and user experience.`;
       } else if (activeTool === 'post-optimizer') {
         prompt = `Determine the best times to post for: "${input1}". 
         Platform: ${input2 || 'Instagram/LinkedIn'}.
@@ -368,6 +394,33 @@ export function Tools() {
         - Strategies for handling negative feedback
         - Ideas for community-building activities (polls, Q&As, etc.)
         - Tracking metrics for community health.`;
+      } else if (activeTool === 'market-research') {
+        prompt = `Perform a professional deep-dive market research for the niche/topic: "${input1}". 
+        Focus: ${input2 || 'Market Trends & Consumer Behavior'}.
+        Using real-time internet search and professional data, provide:
+        - Current Market Size, Growth Potential & CAGR
+        - 5 Major Trends shaping this niche in 2024-2026
+        - Detailed Consumer Personas & Pain Points
+        - 5 High-potential sub-niches or blue-ocean opportunities
+        - Regulatory or technological shifts to watch.`;
+      } else if (activeTool === 'content-repurpose') {
+        prompt = `Repurpose the following content/topic into 5 different social media formats: "${input1}". 
+        Target Audience: ${input2 || 'General'}.
+        Provide:
+        - 1 LinkedIn Thought Leadership Post
+        - 1 Instagram Carousel Outline (5 slides)
+        - 1 Twitter/X Thread (5-7 tweets)
+        - 1 Short-form Video Script (TikTok/Reels)
+        - 1 Email Newsletter Segment.`;
+      } else if (activeTool === 'keyword-gap') {
+        prompt = `Perform a professional keyword gap analysis and search intent research for: "${input1}". 
+        Competitor (optional): ${input2 || 'General Market'}.
+        Using real-time search data, identify:
+        - 15 High-value keywords competitors are ranking for but you aren't
+        - 5 "Low-hanging fruit" keywords with high volume and low difficulty
+        - Search Intent analysis for each keyword (Informational, Transactional, etc.)
+        - Content strategy to capture these gaps
+        - Estimated traffic potential.`;
       } else if (activeTool === 'report-gen') {
         prompt = `Generate a professional monthly marketing report summary for: "${input1}". 
         Key Results: ${input2 || 'General Performance'}.
@@ -383,14 +436,18 @@ export function Tools() {
         const utm = `${baseUrl}?utm_source=${input2 || 'google'}&utm_medium=cpc&utm_campaign=growth_os&utm_content=ai_assistant`;
         setResult(utm);
       } else {
+        const isDeepSearchTool = [
+          'competitor', 'influencer', 'strategy', 'youtube-seo', 
+          'market-research', 'keyword-gap', 'social-listening', 
+          'social-audit', 'ads', 'seo', 'campaign-brief', 
+          'crisis-comms', 'report-gen', 'content-curation',
+          'post-optimizer', 'community-mgr'
+        ].includes(activeTool);
+
         const response = await ai.models.generateContent({
-          model: (activeTool === 'competitor' || activeTool === 'influencer' || activeTool === 'strategy' || activeTool === 'youtube-seo') 
-            ? "gemini-3.1-pro-preview" 
-            : "gemini-3-flash-preview",
+          model: isDeepSearchTool ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview",
           contents: prompt,
-          config: (activeTool === 'competitor' || activeTool === 'influencer' || activeTool === 'strategy' || activeTool === 'youtube-seo') 
-            ? { tools: [{ googleSearch: {} }] } 
-            : undefined
+          config: isDeepSearchTool ? { tools: [{ googleSearch: {} }] } : undefined
         });
         const text = response.text || "No result generated.";
         
@@ -459,11 +516,13 @@ export function Tools() {
   const tools = [
     { id: 'strategy', name: 'Strategy Gen', icon: Sparkles, desc: '30-day campaign plan', category: 'Strategy' },
     { id: 'competitor', name: 'Competitor Analysis', icon: Search, desc: 'Analyze market gaps & strategy', category: 'Strategy' },
+    { id: 'market-research', name: 'Market Research', icon: Globe, desc: 'Deep dive into niche trends', category: 'Strategy' },
     { id: 'roi', name: 'ROI Calc', icon: Calculator, desc: 'Analyze campaign ROI', category: 'Strategy' },
     { id: 'abtest', name: 'A/B Planner', icon: Split, desc: 'Design experiments', category: 'Strategy' },
     
     { id: 'ads', name: 'Ad Copy', icon: Megaphone, desc: 'High-converting ad copy', category: 'Content' },
     { id: 'video-script', name: 'Video Script', icon: Video, desc: 'TikTok/Reels/Shorts scripts', category: 'Content' },
+    { id: 'content-repurpose', name: 'Repurpose AI', icon: ZapIcon, desc: 'Blog to social content', category: 'Content' },
     { id: 'product-desc', name: 'Product Desc', icon: ShoppingBag, desc: 'E-commerce product copy', category: 'Content' },
     { id: 'email', name: 'Email Subjects', icon: Mail, desc: 'Boost open rates', category: 'Content' },
     { id: 'bio-gen', name: 'Bio Generator', icon: UserCircle, desc: 'Social media profile bios', category: 'Content' },
@@ -471,6 +530,7 @@ export function Tools() {
     { id: 'review-reply', name: 'Review Reply', icon: MessageSquare, desc: 'AI customer responses', category: 'Content' },
     
     { id: 'seo', name: 'SEO Keywords', icon: Globe, desc: 'AI keyword research', category: 'Growth' },
+    { id: 'keyword-gap', name: 'Keyword Gap', icon: Target, desc: 'Find missing keyword opportunities', category: 'Growth' },
     { id: 'youtube-seo', name: 'YouTube SEO', icon: Video, desc: 'Optimize video for search', category: 'Growth' },
     { id: 'influencer', name: 'Influencer Find', icon: Users, desc: 'Discover creators', category: 'Growth' },
     { id: 'hashtag', name: 'Hashtag Gen', icon: Hash, desc: 'Viral hashtag sets', category: 'Growth' },
@@ -837,6 +897,9 @@ export function Tools() {
                   {activeTool === 'post-optimizer' && "Determine the best times and formats to post for your audience."}
                   {activeTool === 'community-mgr' && "Develop strategies for engagement and customer loyalty."}
                   {activeTool === 'report-gen' && "Generate professional marketing reports from your data."}
+                  {activeTool === 'market-research' && "Perform a deep-dive market research for any niche or topic."}
+                  {activeTool === 'content-repurpose' && "Repurpose your content into multiple social media formats."}
+                  {activeTool === 'keyword-gap' && "Identify missing keyword opportunities your competitors are ranking for."}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-4">
@@ -870,6 +933,10 @@ export function Tools() {
                         activeTool === 'crisis-comms' ? "Crisis Description" :
                         activeTool === 'press-release' ? "Announcement Topic" :
                         activeTool === 'link-bio' ? "Brand/Profile" :
+                        activeTool === 'market-research' ? "Niche/Topic" :
+                        activeTool === 'content-repurpose' ? "Source Content/Topic" :
+                        activeTool === 'keyword-gap' ? "Your Brand/Niche" :
+                        activeTool === 'social-audit' ? "Profile URL or Name" :
                         activeTool === 'advocacy' ? "Company News/Topic" : "Product/Service Name"}
                       </label>
                       {input1 && (
@@ -882,10 +949,10 @@ export function Tools() {
                         </button>
                       )}
                     </div>
-                    {activeTool === 'brand-voice' || activeTool === 'review-reply' || activeTool === 'social-reply' || activeTool === 'lead-scorer' || activeTool === 'crisis-comms' || activeTool === 'social-audit' || activeTool === 'video-script' ? (
+                    {activeTool === 'brand-voice' || activeTool === 'review-reply' || activeTool === 'social-reply' || activeTool === 'lead-scorer' || activeTool === 'crisis-comms' || activeTool === 'video-script' || activeTool === 'content-repurpose' ? (
                       <textarea 
                         className="flex min-h-[100px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all focus:border-primary/50"
-                        placeholder={activeTool === 'brand-voice' ? "Paste a sample of your writing..." : activeTool === 'social-reply' ? "Paste the social comment here..." : activeTool === 'lead-scorer' ? "Describe the lead (role, company, interaction)..." : activeTool === 'crisis-comms' ? "Describe the situation..." : activeTool === 'social-audit' ? "Describe the current social presence..." : activeTool === 'video-script' ? "What is the video about? (e.g., 5 tips for better sleep)" : "Paste the text here..."}
+                        placeholder={activeTool === 'brand-voice' ? "Paste a sample of your writing..." : activeTool === 'social-reply' ? "Paste the social comment here..." : activeTool === 'lead-scorer' ? "Describe the lead (role, company, interaction)..." : activeTool === 'crisis-comms' ? "Describe the situation..." : activeTool === 'video-script' ? "What is the video about? (e.g., 5 tips for better sleep)" : activeTool === 'content-repurpose' ? "Paste the content you want to repurpose..." : "Paste the text here..."}
                         value={input1}
                         onChange={(e) => {
                           setInput1(e.target.value);
@@ -910,9 +977,12 @@ export function Tools() {
                                      activeTool === 'link-bio' ? "e.g., Fitness Coach" :
                                      activeTool === 'advocacy' ? "e.g., New Feature Launch" : 
                                      activeTool === 'content-curation' ? "e.g., AI in Marketing" :
+                                     activeTool === 'social-audit' ? "e.g., instagram.com/nike or @nike" :
                                      activeTool === 'post-optimizer' ? "e.g., Tech Startup" :
                                      activeTool === 'community-mgr' ? "e.g., SaaS Users Group" :
-                                     activeTool === 'report-gen' ? "e.g., Acme Corp Q1" : "e.g., Luxury Watches"} 
+                                     activeTool === 'report-gen' ? "e.g., Acme Corp Q1" : 
+                                     activeTool === 'market-research' ? "e.g., Electric Vehicles in India" :
+                                     activeTool === 'keyword-gap' ? "e.g., Sustainable Fashion Brand" : "e.g., Luxury Watches"} 
                         value={input1}
                         onChange={(e) => {
                           setInput1(e.target.value);
@@ -957,8 +1027,11 @@ export function Tools() {
                          activeTool === 'press-release' ? "Announcement Type" :
                          activeTool === 'link-bio' ? "Primary Goal" :
                          activeTool === 'advocacy' ? "Tone" : 
+                         activeTool === 'market-research' ? "Focus Area" :
+                         activeTool === 'content-repurpose' ? "Target Audience" :
+                         activeTool === 'keyword-gap' ? "Competitor (optional)" :
                          activeTool === 'content-curation' ? "Target Audience" :
-                         activeTool === 'social-audit' ? "Platforms to Audit" :
+                         activeTool === 'social-audit' ? "Competitors & Platforms" :
                          activeTool === 'post-optimizer' ? "Target Platform" :
                          activeTool === 'community-mgr' ? "Primary Goal" :
                          activeTool === 'report-gen' ? "Key Results/Metrics" : "Source (e.g., facebook)"}
@@ -992,7 +1065,11 @@ export function Tools() {
                                    activeTool === 'crisis-comms' ? "e.g., High" :
                                    activeTool === 'press-release' ? "e.g., Product Launch" :
                                    activeTool === 'link-bio' ? "e.g., Drive Sales" :
-                                   activeTool === 'advocacy' ? "e.g., Enthusiastic" : "e.g., Instagram, Real Estate, Sale"} 
+                                   activeTool === 'advocacy' ? "e.g., Enthusiastic" : 
+                                   activeTool === 'market-research' ? "e.g., Consumer Behavior" :
+                                   activeTool === 'content-repurpose' ? "e.g., Gen Z" :
+                                   activeTool === 'keyword-gap' ? "e.g., Competitor.com" : 
+                                   activeTool === 'social-audit' ? "e.g., Competitor1, Competitor2, Instagram" : "e.g., Instagram, Real Estate, Sale"} 
                       value={input2}
                       onChange={(e) => {
                         setInput2(e.target.value);
@@ -1052,14 +1129,28 @@ export function Tools() {
                     </CardTitle>
                     <CardDescription>Your AI-generated marketing content.</CardDescription>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleCopy} className="flex items-center space-x-2 w-full sm:w-auto justify-center h-10 sm:h-9">
-                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                    <span>{copied ? "Copied!" : "Copy All"}</span>
-                  </Button>
+                  <div className="flex items-center space-x-2 w-full sm:w-auto">
+                    <Button variant="outline" size="sm" onClick={handlePrint} className="flex items-center space-x-2 flex-1 sm:flex-none justify-center h-10 sm:h-9 no-print">
+                      <Printer className="h-4 w-4" />
+                      <span>Print Report</span>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleCopy} className="flex items-center space-x-2 flex-1 sm:flex-none justify-center h-10 sm:h-9 no-print">
+                      {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                      <span>{copied ? "Copied!" : "Copy All"}</span>
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent className="p-4 sm:p-6">
-                  <div className="prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:text-primary prose-strong:text-foreground overflow-y-auto overflow-x-auto max-h-[600px] pr-2 custom-scrollbar">
+                <CardContent className="p-4 sm:p-6 print-container">
+                  <div className="hidden print:block mb-8 text-center border-b pb-4">
+                    <h1 className="text-2xl font-bold text-primary">Marketing Strategy Report</h1>
+                    <p className="text-sm text-muted-foreground">Generated by AI Marketing Suite • {new Date().toLocaleDateString()}</p>
+                    <p className="text-xs font-bold mt-2 uppercase tracking-widest">{tools.find(t => t.id === activeTool)?.name} Analysis</p>
+                  </div>
+                  <div className="prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:text-primary prose-strong:text-foreground overflow-y-auto overflow-x-auto max-h-[600px] pr-2 custom-scrollbar print:max-h-none print:overflow-visible print:pr-0">
                     <ReactMarkdown>{result}</ReactMarkdown>
+                  </div>
+                  <div className="hidden print:block mt-12 pt-4 border-t text-center text-[10px] text-muted-foreground">
+                    &copy; {new Date().getFullYear()} AI Marketing Suite. All rights reserved. Confidential Marketing Intelligence.
                   </div>
                 </CardContent>
               </Card>

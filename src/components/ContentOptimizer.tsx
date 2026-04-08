@@ -74,17 +74,20 @@ export function ContentOptimizer() {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Analyze this ${activePlatform} content and provide SEO optimization suggestions. 
+        model: "gemini-3.1-pro-preview",
+        contents: `Perform a professional deep-dive research into current ${activePlatform} algorithms and SEO trends. 
+        Analyze the following content and provide expert optimization suggestions based on REAL-TIME platform data. 
+        
         Format as JSON with: 
         - score (0-100)
         - strengths (array of strings)
         - weaknesses (array of strings)
-        - suggestions (array of strings with title and description)
+        - suggestions (array of objects with title and description)
         - keywords (array of strings)
         
         Content: ${contentToOptimize}`,
         config: {
+          tools: [{ googleSearch: {} }],
           responseMimeType: "application/json"
         }
       });

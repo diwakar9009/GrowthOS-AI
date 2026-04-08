@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, TrendingUp, PenTool, Wrench, User, Flame, BarChart3, Briefcase, Calendar as CalendarIcon, Layout, Image, Search, Sparkles, FileText, Users, Palette } from "lucide-react";
+import { LayoutGrid, TrendingUp, PenTool, Wrench, User, Flame, BarChart3, Briefcase, Calendar as CalendarIcon, Layout, Image, Search, Sparkles, FileText, Users, Palette, FileBarChart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navGroups = [
@@ -26,6 +26,7 @@ const navGroups = [
     items: [
       { name: "Assets", href: "/assets", icon: Image },
       { name: "Analytics", href: "/analytics", icon: BarChart3 },
+      { name: "Reports", href: "/reports", icon: FileBarChart },
       { name: "Invoices", href: "/invoices", icon: FileText },
       { name: "Team", href: "/team", icon: Users },
       { name: "Brand Kit", href: "/brand-kit", icon: Palette },
@@ -50,7 +51,7 @@ export function Navigation() {
   return (
     <>
       {/* Mobile Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center border-t bg-background px-4 md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center border-t bg-background px-4 md:hidden no-print">
         <div className="flex w-full items-center justify-around">
           {mobileItems.map((item) => {
             const Icon = item.icon;
@@ -73,7 +74,7 @@ export function Navigation() {
       </nav>
 
       {/* Desktop Side Nav */}
-      <aside className="fixed left-0 top-0 hidden h-screen w-64 flex-col border-r bg-background p-6 md:flex">
+      <aside className="fixed left-0 top-0 hidden h-screen w-64 flex-col border-r bg-background p-6 md:flex no-print">
         <div className="mb-8 flex items-center space-x-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
             <Flame className="h-5 w-5" />

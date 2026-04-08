@@ -43,3 +43,30 @@
     scrollbar-width: none;
   }
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .print-container {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+  .print-container * {
+    color: black !important;
+  }
+  .prose {
+    max-width: none !important;
+  }
+}

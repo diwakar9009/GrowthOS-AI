@@ -55,7 +55,8 @@ import {
   ArrowRight,
   ShieldCheck,
   BarChart3,
-  Plus
+  Plus,
+  FileBarChart
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/lib/AuthContext";
@@ -367,6 +368,12 @@ export function Analytics() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <Link to="/reports">
+            <Button variant="outline" size="sm" className="hidden sm:flex border-primary/20 hover:bg-primary/5 h-9">
+              <FileBarChart className="mr-2 h-4 w-4 text-primary" />
+              Export to Report Builder
+            </Button>
+          </Link>
           <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
             {/* Project/Campaign Selector */}
             <div className="relative whitespace-nowrap">

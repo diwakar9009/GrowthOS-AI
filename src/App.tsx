@@ -22,6 +22,7 @@ import { Invoices } from "./components/Invoices";
 import { Team } from "./components/Team";
 import { BrandKit } from "./components/BrandKit";
 import { ClientPortal } from "./components/ClientPortal";
+import { ReportBuilder } from "./components/ReportBuilder";
 import { LandingPage } from "./components/LandingPage";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 import { auth, googleProvider, signInWithPopup } from "./lib/firebase";
@@ -67,6 +68,7 @@ function AppContent() {
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/team" element={<Team />} />
           <Route path="/brand-kit" element={<BrandKit />} />
+          <Route path="/reports" element={<ReportBuilder />} />
           <Route path="/portal/:clientId" element={<ClientPortal />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/profile" element={<Profile />} />

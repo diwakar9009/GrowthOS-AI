@@ -28,8 +28,8 @@ export function SEOGenerator() {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `As an expert Digital Marketing Executive and SEO Specialist, generate a highly targeted, trending, and SEO-optimized content pack for the following:
+        model: "gemini-3.1-pro-preview",
+        contents: `As an expert Digital Marketing Executive and SEO Specialist, perform a professional deep-dive internet research and generate a highly targeted, trending, and SEO-optimized content pack for the following:
         
         Topic/Keywords: ${topic}
         Niche/Industry: ${niche || "General Marketing"}
@@ -39,17 +39,18 @@ export function SEOGenerator() {
         Tone: ${tone}
         Desired Output Format: ${format}
         
-        Please provide a comprehensive response including:
-        1. **5 High-CTR & SEO-Optimized Titles**: Tailored specifically for the ${platform} algorithm and the ${targetAudience} audience.
-        2. **A Compelling Meta Description/Caption**: Optimized for search intent, including primary keywords, and designed to maximize user engagement and click-through rate.
-        3. **Strategic Keyword List**:
-           - Primary Keywords (High volume)
-           - Secondary/LSI Keywords (Contextual)
-           - Long-tail Keywords (Specific intent)
-        4. **15-20 Trending Hashtags**: Categorized by reach (High, Medium, Niche) specifically for ${platform}.
-        5. **Content Strategy Tip**: One actionable tip on how to structure the content for this specific niche and audience to improve ranking.
-        
-        Format the output clearly using professional Markdown with headers, bullet points, and bold text for key terms.`,
+        Using real-time search data and current platform algorithm trends, please provide:
+        1. **5 High-CTR & SEO-Optimized Titles**: Tailored specifically for the current ${platform} algorithm.
+        2. **A Compelling Meta Description/Caption**: Optimized for search intent, including primary keywords, and designed to maximize user engagement.
+        3. **Strategic Keyword List**: Based on current search volume and trends.
+           - Primary Keywords
+           - Secondary/LSI Keywords
+           - Long-tail Keywords
+        4. **15-20 Trending Hashtags**: Categorized by reach specifically for ${platform} based on current viral trends.
+        5. **Content Strategy Tip**: One actionable tip on how to structure the content for this specific niche and audience to improve ranking NOW.`,
+        config: {
+          tools: [{ googleSearch: {} }]
+        }
       });
 
       const text = response.text || "No response from AI.";

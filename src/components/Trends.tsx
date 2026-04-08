@@ -43,18 +43,19 @@ export function Trends() {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Generate 5 viral content ideas for a ${niche || "general"} creator based on the trending topic: "${trend}".
+        model: "gemini-3.1-pro-preview",
+        contents: `Perform a professional deep-dive internet research and generate 5 viral content ideas for a ${niche || "general"} creator based on the trending topic: "${trend}".
         Target Audience: ${audience}
         Client/Project Context: ${client || "General"}
         Brand Voice/Tone: ${clientVoice || "Professional & Engaging"}
         Output Format: ${format}
         
-        Please provide:
+        Using real-time search data, provide:
         - Video/Reel hook (tailored to audience)
         - Brief description
-        - Why it's trending (use real-time data if possible)
-        - Call to action (CTA)`,
+        - Why it's trending (use specific real-time data and search results)
+        - Call to action (CTA)
+        - Strategic insight on why this trend is relevant NOW.`,
         config: {
           tools: [{ googleSearch: {} }]
         }
@@ -92,11 +93,12 @@ export function Trends() {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `As an SEO expert, generate a list of 10-15 trending and high-volume keywords for the topic: "${keywordTopic}" in the ${niche || "general"} niche. 
+        model: "gemini-3.1-pro-preview",
+        contents: `As an SEO expert, perform professional search research and generate a list of 10-15 trending and high-volume keywords for the topic: "${keywordTopic}" in the ${niche || "general"} niche. 
         Target Audience: ${audience}
-        Format as JSON with an array of objects: { keyword: string, volume: string, difficulty: 'low' | 'medium' | 'high', trend: 'up' | 'down' | 'stable' }`,
+        Using real-time search data, format as JSON with an array of objects: { keyword: string, volume: string, difficulty: 'low' | 'medium' | 'high', trend: 'up' | 'down' | 'stable' }`,
         config: {
+          tools: [{ googleSearch: {} }],
           responseMimeType: "application/json"
         }
       });

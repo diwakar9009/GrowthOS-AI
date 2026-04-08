@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight, Plus, Calendar as CalendarIcon, PenTool, Wrench, Target, Ear, FileText, IndianRupee, Users, Palette, Search, Layout } from "lucide-react";
+import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight, Plus, Calendar as CalendarIcon, PenTool, Wrench, Target, Ear, FileText, IndianRupee, Users, Palette, Search, Layout, Activity, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Button } from "./Button";
 import { MOCK_SUGGESTIONS, MOCK_TRENDS } from "@/constants";
@@ -345,12 +345,15 @@ export function Dashboard() {
       <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
         <Card className="bg-primary/5 border-primary/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <IndianRupee className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-bold">Campaign Health</CardTitle>
+            <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{totalRevenue.toLocaleString('en-IN')}</div>
-            <p className="text-xs text-muted-foreground">Paid invoices</p>
+            <div className="text-2xl font-bold">94.2%</div>
+            <p className="text-[10px] text-emerald-600 font-bold flex items-center mt-1">
+              <ArrowUpRight className="h-3 w-3 mr-1" />
+              +2.4% vs last week
+            </p>
           </CardContent>
         </Card>
         <Card className="bg-emerald-50 border-emerald-100">
