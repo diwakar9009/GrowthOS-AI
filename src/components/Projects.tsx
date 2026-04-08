@@ -230,9 +230,12 @@ export function Projects() {
             <Sparkles className="mr-2 h-4 w-4 text-primary" />
             Templates
           </Button>
-          <Button onClick={() => setIsAdding(!isAdding)} className="w-full sm:w-auto">
+          <Button 
+            onClick={() => setIsAdding(!isAdding)} 
+            className="w-full sm:w-auto bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg shadow-primary/20"
+          >
             <Plus className="mr-2 h-4 w-4" />
-            New Task
+            {isAdding ? "Cancel" : "New Campaign"}
           </Button>
         </div>
       </div>

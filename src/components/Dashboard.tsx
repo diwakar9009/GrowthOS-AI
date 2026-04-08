@@ -1,13 +1,13 @@
 import { Link } from "react-router-dom";
-import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight, Plus, Calendar as CalendarIcon, PenTool, Wrench, Target, Ear, FileText, IndianRupee, Users, Palette, Search } from "lucide-react";
+import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight, Plus, Calendar as CalendarIcon, PenTool, Wrench, Target, Ear, FileText, IndianRupee, Users, Palette, Search, Layout } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Button } from "./Button";
 import { MOCK_SUGGESTIONS, MOCK_TRENDS } from "@/constants";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 import { useEffect, useState } from "react";
-import { db, collection, query, orderBy, limit, onSnapshot, where, handleFirestoreError, OperationType } from "@/lib/firebase";
+import { db, collection, query, orderBy, limit, onSnapshot, where, handleFirestoreError, OperationType, addDoc } from "@/lib/firebase";
 import { GoogleGenAI } from "@google/genai";
 import ReactMarkdown from "react-markdown";
 
@@ -17,9 +17,18 @@ export function Dashboard() {
   const [clientCount, setClientCount] = useState(0);
   const [nextPost, setNextPost] = useState<any>(null);
   const [briefing, setBriefing] = useState<string | null>(null);
+  const [tipOfDay, setTipOfDay] = useState<string | null>(null);
   const [loadingBriefing, setLoadingBriefing] = useState(false);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [teamCount, setTeamCount] = useState(0);
+
+  // Quick Add State
+  const [showQuickAdd, setShowQuickAdd] = useState<'client' | 'project' | null>(null);
+  const [quickAddName, setQuickAddName] = useState("");
+  const [quickAddTitle, setQuickAddTitle] = useState("");
+  const [quickAddClientId, setQuickAddClientId] = useState("");
+  const [clients, setClients] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const quickActions = [
     { name: "New Strategy", icon: Sparkles, href: "/tools", color: "bg-blue-500" },
@@ -61,10 +70,11 @@ export function Dashboard() {
       handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/tasks`);
     });
 
-    // Fetch client count
-    const qClients = query(collection(db, `users/${user.uid}/clients`));
+    // Fetch client count and clients list
+    const qClients = query(collection(db, `users/${user.uid}/clients`), orderBy("name", "asc"));
     const unsubscribeClients = onSnapshot(qClients, (snapshot) => {
       setClientCount(snapshot.size);
+      setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/clients`);
     });
@@ -95,18 +105,30 @@ export function Dashboard() {
   }, [user]);
 
   const generateBriefing = async () => {
-    if (!user || recentTasks.length === 0) return;
+    if (!user) return;
     setLoadingBriefing(true);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const taskSummary = recentTasks.map(t => `${t.type}: ${t.title}`).join(", ");
+      const taskSummary = recentTasks.length > 0 
+        ? recentTasks.map(t => `${t.type}: ${t.title}`).join(", ")
+        : "No recent tasks. Just starting the day.";
+      
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `As a professional marketing assistant, provide a concise (3-4 bullet points) "Daily Briefing" for ${profile?.displayName || 'Diwakar'}. 
         Context: They have ${clientCount} clients. Recent activity: ${taskSummary}.
-        Focus on: What to do next, a quick trend tip, and a motivational closer.`,
+        Also, provide a separate "Marketing Tip of the Day" (one sentence).
+        Format: 
+        BRIEFING: [bullet points]
+        TIP: [one sentence tip]`,
       });
-      setBriefing(response.text || null);
+      
+      const text = response.text || "";
+      const briefingPart = text.split("TIP:")[0].replace("BRIEFING:", "").trim();
+      const tipPart = text.split("TIP:")[1]?.trim() || "Focus on consistency to build brand authority.";
+      
+      setBriefing(briefingPart);
+      setTipOfDay(tipPart);
     } catch (e) {
       console.error(e);
     } finally {
@@ -114,11 +136,55 @@ export function Dashboard() {
     }
   };
 
+  const handleQuickAddClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !quickAddName) return;
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, `users/${user.uid}/clients`), {
+        userId: user.uid,
+        name: quickAddName,
+        status: "active",
+        progress: 0,
+        createdAt: new Date().toISOString()
+      });
+      setQuickAddName("");
+      setShowQuickAdd(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}/clients`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleQuickAddProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !quickAddTitle) return;
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, `users/${user.uid}/projects`), {
+        userId: user.uid,
+        clientId: quickAddClientId || null,
+        title: quickAddTitle,
+        status: "todo",
+        priority: "medium",
+        createdAt: new Date().toISOString()
+      });
+      setQuickAddTitle("");
+      setQuickAddClientId("");
+      setShowQuickAdd(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}/projects`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   useEffect(() => {
-    if (recentTasks.length > 0 && !briefing) {
+    if (!briefing) {
       generateBriefing();
     }
-  }, [recentTasks]);
+  }, [recentTasks, clientCount]);
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -132,9 +198,17 @@ export function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2 border-primary/20 bg-gradient-to-br from-primary/5 to-background shadow-sm overflow-hidden">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold flex items-center">
-              <Sparkles className="mr-2 h-4 w-4 text-primary shrink-0" />
-              AI Daily Briefing
+            <CardTitle className="text-sm font-bold flex items-center justify-between">
+              <div className="flex items-center">
+                <Sparkles className="mr-2 h-4 w-4 text-primary shrink-0" />
+                AI Daily Briefing
+              </div>
+              {tipOfDay && (
+                <div className="hidden md:flex items-center text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full animate-pulse">
+                  <Zap className="h-3 w-3 mr-1" />
+                  Tip: {tipOfDay}
+                </div>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -144,8 +218,19 @@ export function Dashboard() {
                 <span>Analyzing your recent activity...</span>
               </div>
             ) : briefing ? (
-              <div className="prose prose-sm max-w-none dark:prose-invert text-muted-foreground leading-relaxed max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                <ReactMarkdown>{briefing}</ReactMarkdown>
+              <div className="space-y-4">
+                <div className="prose prose-sm max-w-none dark:prose-invert text-muted-foreground leading-relaxed max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                  <ReactMarkdown>{briefing}</ReactMarkdown>
+                </div>
+                {tipOfDay && (
+                  <div className="md:hidden p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                    <p className="text-[10px] font-bold text-amber-800 flex items-center mb-1">
+                      <Zap className="h-3 w-3 mr-1" />
+                      TIP OF THE DAY
+                    </p>
+                    <p className="text-xs text-amber-700 italic">{tipOfDay}</p>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground italic py-4">No briefing available yet. Start by generating some content!</p>
@@ -153,21 +238,108 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-4 lg:grid-cols-1 gap-3 md:gap-4">
-          {quickActions.map((action) => (
-            <Link key={action.name} to={action.href} className="w-full">
-              <Card className="h-full hover:border-primary/50 transition-all group cursor-pointer active:scale-95 border-primary/10">
-                <CardContent className="p-2 md:p-4 flex flex-col items-center justify-center text-center space-y-1 md:space-y-2">
-                  <div className={cn("p-1.5 md:p-2 rounded-lg text-white transition-transform group-hover:scale-110", action.color)}>
-                    <action.icon className="h-4 w-4 md:h-5 md:w-5" />
-                  </div>
-                  <span className="text-[10px] md:text-xs font-bold leading-tight">{action.name.split(' ')[0]}</span>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+        <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 md:gap-4">
+          <Card 
+            className="hover:border-primary/50 transition-all group cursor-pointer active:scale-95 border-primary/10 bg-primary/5"
+            onClick={() => setShowQuickAdd('client')}
+          >
+            <CardContent className="p-4 flex items-center space-x-4">
+              <div className="p-2 rounded-lg bg-blue-500 text-white">
+                <Users className="h-5 w-5" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-bold">Quick Add Client</p>
+                <p className="text-[10px] text-muted-foreground">Onboard a new client</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card 
+            className="hover:border-primary/50 transition-all group cursor-pointer active:scale-95 border-primary/10 bg-primary/5"
+            onClick={() => setShowQuickAdd('project')}
+          >
+            <CardContent className="p-4 flex items-center space-x-4">
+              <div className="p-2 rounded-lg bg-purple-500 text-white">
+                <Layout className="h-5 w-5" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-bold">New Campaign</p>
+                <p className="text-[10px] text-muted-foreground">Start a new project</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
+
+      {/* Quick Add Modals */}
+      <AnimatePresence>
+        {showQuickAdd && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md"
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>{showQuickAdd === 'client' ? 'Add New Client' : 'Start New Campaign'}</CardTitle>
+                  <CardDescription>Quickly add to your database.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={showQuickAdd === 'client' ? handleQuickAddClient : handleQuickAddProject} className="space-y-4">
+                    {showQuickAdd === 'client' ? (
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase text-muted-foreground">Client Name</label>
+                        <input 
+                          autoFocus
+                          className="w-full bg-muted border-none rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+                          placeholder="e.g. Nike India"
+                          value={quickAddName}
+                          onChange={(e) => setQuickAddName(e.target.value)}
+                          required
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase text-muted-foreground">Campaign Title</label>
+                          <input 
+                            autoFocus
+                            className="w-full bg-muted border-none rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+                            placeholder="e.g. Summer Sale 2024"
+                            value={quickAddTitle}
+                            onChange={(e) => setQuickAddTitle(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase text-muted-foreground">Select Client (Optional)</label>
+                          <select 
+                            className="w-full bg-muted border-none rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+                            value={quickAddClientId}
+                            onChange={(e) => setQuickAddClientId(e.target.value)}
+                          >
+                            <option value="">No Client</option>
+                            {clients.map(c => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-end space-x-2 pt-2">
+                      <Button type="button" variant="ghost" onClick={() => setShowQuickAdd(null)}>Cancel</Button>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Stats */}
       <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">

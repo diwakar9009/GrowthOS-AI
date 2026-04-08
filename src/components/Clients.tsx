@@ -97,9 +97,12 @@ export function Clients() {
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Client Management</h1>
           <p className="text-sm md:text-base text-muted-foreground">Track your client campaigns and progress.</p>
         </div>
-        <Button onClick={() => setIsAdding(!isAdding)} className="w-full md:w-auto">
+        <Button 
+          onClick={() => setIsAdding(!isAdding)} 
+          className="w-full md:w-auto bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 shadow-lg shadow-primary/20"
+        >
           <Plus className="mr-2 h-4 w-4" />
-          Add Client
+          {isAdding ? "Cancel" : "Add Client"}
         </Button>
       </div>
 

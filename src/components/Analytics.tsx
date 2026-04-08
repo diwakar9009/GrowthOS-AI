@@ -54,13 +54,15 @@ import {
   Lightbulb,
   ArrowRight,
   ShieldCheck,
-  BarChart3
+  BarChart3,
+  Plus
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/lib/AuthContext";
 import { db, collection, query, onSnapshot } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
+import { Link } from "react-router-dom";
 
 const growthData = [
   { name: "Mon", followers: 4000, engagement: 2400, reach: 12000, conversionRate: 3.2 },
@@ -158,7 +160,7 @@ export function Analytics() {
 
   // Deterministic data generation based on selection
   const getDeterministicData = () => {
-    const seed = selectedClients.join("") + selectedProjectId + dateRange;
+    const seed = (selectedClients.join("") || "all") + (selectedProjectId || "all") + dateRange;
     let hash = 0;
     for (let i = 0; i < seed.length; i++) {
       hash = ((hash << 5) - hash) + seed.charCodeAt(i);
@@ -175,18 +177,19 @@ export function Analytics() {
                   dateRange === "7d" ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] :
                   Array.from({length: days}, (_, i) => `Day ${i+1}`);
 
-    const baseFollowers = 5000 + (hash % 2000);
-    const baseEngagement = 2000 + (hash % 1000);
-    const baseReach = 10000 + (hash % 5000);
+    const baseFollowers = 5000 + (Math.abs(hash) % 2000);
+    const baseEngagement = 2000 + (Math.abs(hash) % 1000);
+    const baseReach = 10000 + (Math.abs(hash) % 5000);
 
     const chartData = labels.map((name, i) => {
       const s = hash + i;
+      const trend = Math.sin(i / 2) * 200; // Add some natural wave
       return {
         name,
-        followers: Math.floor(baseFollowers + (random(s) * 500 * (i + 1) / labels.length)),
-        engagement: Math.floor(baseEngagement + (random(s + 1) * 300)),
-        reach: Math.floor(baseReach + (random(s + 2) * 2000)),
-        conversionRate: Number((3 + random(s + 3) * 4).toFixed(1))
+        followers: Math.floor(baseFollowers + trend + (random(s) * 500 * (i + 1) / labels.length)),
+        engagement: Math.floor(baseEngagement + trend/2 + (random(s + 1) * 300)),
+        reach: Math.floor(baseReach + trend*5 + (random(s + 2) * 2000)),
+        conversionRate: Number((3 + random(s + 3) * 4 + (trend / 100)).toFixed(1))
       };
     });
 
@@ -343,13 +346,25 @@ export function Analytics() {
   };
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
+  const selectedClientObjects = clients.filter(c => selectedClients.includes(c.name));
 
   return (
     <div className="space-y-6 md:space-y-8 pb-20 md:pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col space-y-2">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Growth Intelligence</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Comprehensive insights and live campaign statistics based on your active projects.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center">
+            Growth Intelligence
+            <div className="ml-3 px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded-full uppercase tracking-wider">
+              Live
+            </div>
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            {selectedProjectId !== "all" 
+              ? `Analyzing performance for campaign: ${selectedProject?.title}`
+              : selectedClients.length > 0 && !selectedClients.includes("all")
+                ? `Analyzing performance for ${selectedClients.length} selected clients`
+                : "Comprehensive insights and live campaign statistics across all projects."}
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
@@ -381,18 +396,33 @@ export function Analytics() {
                       <span className="text-sm font-medium">All Campaigns</span>
                     </div>
                     <div className="h-px bg-border my-1" />
-                    {projects.map(p => (
-                      <div 
-                        key={p.id}
-                        className={cn(
-                          "flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-muted transition-all",
-                          selectedProjectId === p.id && "bg-primary/10 text-primary"
-                        )}
-                        onClick={() => toggleProject(p.id)}
-                      >
-                        <span className="text-sm font-medium truncate">{p.title}</span>
+                    {projects.length > 0 ? (
+                      projects.map(p => (
+                        <div 
+                          key={p.id}
+                          className={cn(
+                            "flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-muted transition-all",
+                            selectedProjectId === p.id && "bg-primary/10 text-primary"
+                          )}
+                          onClick={() => toggleProject(p.id)}
+                        >
+                          <span className="text-sm font-medium truncate">{p.title}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center">
+                        <p className="text-xs text-muted-foreground mb-2">No campaigns found</p>
+                        <Link to="/projects">
+                          <Button size="sm" variant="outline" className="w-full text-[10px] h-7">
+                            <Plus className="h-3 w-3 mr-1" /> Add Campaign
+                          </Button>
+                        </Link>
                       </div>
-                    ))}
+                    )}
+                    <div className="h-px bg-border my-1" />
+                    <Link to="/projects" className="block p-2 text-[10px] text-center text-primary hover:underline">
+                      Manage All Campaigns
+                    </Link>
                   </div>
                 </>
               )}
@@ -451,24 +481,39 @@ export function Analytics() {
                   
                   <div className="h-px bg-border my-1" />
                   
-                  {clients.map(c => (
-                    <div 
-                      key={c.id}
-                      className={cn(
-                        "flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-muted transition-all duration-200 hover:scale-[1.02] hover:shadow-sm",
-                        selectedClients.includes(c.name) && "bg-primary/10 text-primary"
-                      )}
-                      onClick={() => toggleClient(c.name)}
-                    >
-                      <div className={cn(
-                        "h-4 w-4 border rounded flex items-center justify-center",
-                        selectedClients.includes(c.name) ? "bg-primary border-primary" : "border-muted-foreground"
-                      )}>
-                        {selectedClients.includes(c.name) && <Check className="h-3 w-3 text-white" />}
+                  {clients.length > 0 ? (
+                    clients.map(c => (
+                      <div 
+                        key={c.id}
+                        className={cn(
+                          "flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-muted transition-all duration-200 hover:scale-[1.02] hover:shadow-sm",
+                          selectedClients.includes(c.name) && "bg-primary/10 text-primary"
+                        )}
+                        onClick={() => toggleClient(c.name)}
+                      >
+                        <div className={cn(
+                          "h-4 w-4 border rounded flex items-center justify-center",
+                          selectedClients.includes(c.name) ? "bg-primary border-primary" : "border-muted-foreground"
+                        )}>
+                          {selectedClients.includes(c.name) && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <span className="text-sm truncate">{c.name}</span>
                       </div>
-                      <span className="text-sm truncate">{c.name}</span>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center">
+                      <p className="text-xs text-muted-foreground mb-2">No clients found</p>
+                      <Link to="/clients">
+                        <Button size="sm" variant="outline" className="w-full text-[10px] h-7">
+                          <Plus className="h-3 w-3 mr-1" /> Add Client
+                        </Button>
+                      </Link>
                     </div>
-                  ))}
+                  )}
+                  <div className="h-px bg-border my-1" />
+                  <Link to="/clients" className="block p-2 text-[10px] text-center text-primary hover:underline">
+                    Manage All Clients
+                  </Link>
                 </div>
               </>
             )}
