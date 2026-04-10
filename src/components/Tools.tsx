@@ -67,7 +67,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "motion/react";
 
-type ToolType = 'ads' | 'seo' | 'email' | 'utm' | 'downloader' | 'compressor' | 'competitor' | 'influencer' | 'hashtag' | 'strategy' | 'roi' | 'abtest' | 'brand-voice' | 'product-desc' | 'bio-gen' | 'video-script' | 'review-reply' | 'social-listening' | 'lead-magnet' | 'email-sequence' | 'landing-page' | 'campaign-brief' | 'social-reply' | 'content-calendar' | 'ad-budget' | 'lead-scorer' | 'sales-script' | 'crisis-comms' | 'press-release' | 'link-bio' | 'advocacy' | 'content-curation' | 'social-audit' | 'post-optimizer' | 'community-mgr' | 'report-gen' | 'youtube-seo' | 'market-research' | 'content-repurpose' | 'keyword-gap';
+type ToolType = 'ads' | 'seo' | 'email' | 'utm' | 'downloader' | 'compressor' | 'competitor' | 'influencer' | 'hashtag' | 'strategy' | 'roi' | 'abtest' | 'brand-voice' | 'product-desc' | 'bio-gen' | 'video-script' | 'review-reply' | 'social-listening' | 'lead-magnet' | 'email-sequence' | 'landing-page' | 'campaign-brief' | 'social-reply' | 'content-calendar' | 'ad-budget' | 'lead-scorer' | 'sales-script' | 'crisis-comms' | 'press-release' | 'link-bio' | 'advocacy' | 'content-curation' | 'social-audit' | 'post-optimizer' | 'community-mgr' | 'report-gen' | 'youtube-seo' | 'market-research' | 'content-repurpose' | 'keyword-gap' | 'competitor-pricing' | 'ad-creative' | 'site-audit' | 'rank-tracker' | 'backlink-checker' | 'robots-sitemap' | 'url-shortener' | 'qr-generator' | 'contract-gen' | 'time-estimate';
 
 export function Tools() {
   const { user } = useAuth();
@@ -123,28 +123,29 @@ export function Tools() {
       let prompt = "";
 
       if (activeTool === 'ads') {
-        prompt = `Perform professional internet research on current high-performing ad trends for: "${input1}". 
+        prompt = `Perform professional internet research on current high-performing ad trends and competitor strategies for: "${input1}". 
         Target Platform: ${input2 || 'Google/Meta'}.
         Using real-time search data, generate 3 high-converting ad copies including:
-        - Catchy Headlines
-        - Benefit-driven Primary Text
-        - Strategic CTAs
-        - Analysis of why these will work based on current market trends.`;
+        - Catchy Headlines & Benefit-driven Primary Text
+        - Strategic CTAs optimized for mobile users
+        - Competitive Analysis: How these ads outperform current competitor offerings
+        - Mobile Focus: Specific layout or visual suggestions for mobile-first ad formats.`;
       } else if (activeTool === 'seo') {
         prompt = `Perform a deep-dive SEO and keyword research for the topic: "${input1}". 
         Focus Niche: ${input2 || 'General'}.
-        Using real-time search data, provide:
-        - 10 High-intent, trending SEO keywords with estimated difficulty
-        - 5 Long-tail keyword opportunities
-        - 3 Blog title ideas optimized for current search trends
-        - Content structure recommendations for the top keyword.`;
+        Using real-time search data and competitive benchmarking, provide:
+        - 10 High-intent, trending SEO keywords with estimated difficulty and search volume
+        - 5 Long-tail keyword opportunities competitors are missing
+        - 3 Blog title ideas optimized for current search trends and mobile readability
+        - Content structure recommendations with a focus on mobile user experience (Core Web Vitals).`;
       } else if (activeTool === 'email') {
-        prompt = `Generate 5 high-open-rate email subject lines and a professional email body for: "${input1}". 
+        prompt = `Generate professional email marketing content for: "${input1}". 
         Context: ${input2 || 'Marketing Newsletter'}.
         Using real-time data on email marketing trends, provide:
-        - 5 Subject line variations (A/B test ideas)
+        - 5 High-open-rate subject lines (A/B test ideas)
         - A structured email body with a clear hook, value, and CTA
-        - Personalization suggestions.`;
+        - Mobile Optimization: Specific advice for mobile-friendly layouts and "fat-finger" CTAs
+        - Competitive Edge: How to stand out in a crowded inbox based on current industry benchmarks.`;
       } else if (activeTool === 'competitor') {
         prompt = `Using professional internet search and real-time data, perform a deep-dive digital marketing analysis for: "${input1}". 
         Focus area: ${input2 || 'General Strategy'}.
@@ -167,21 +168,20 @@ export function Tools() {
         - Estimated engagement rates & recent viral content
         - Why they are a strategic fit for this niche.`;
       } else if (activeTool === 'hashtag') {
-        prompt = `Generate a strategic set of 30 hashtags for a post about ${input1}. 
+        prompt = `Perform real-time internet research to generate a strategic set of 30 hashtags for: "${input1}". 
         Platform: ${input2 || 'Instagram'}.
-        Categorize them into:
-        - High volume (Broad)
-        - Medium volume (Niche)
-        - Low volume (Community)
-        - Branded/Campaign specific.`;
+        Using current trending data, categorize them into:
+        - High volume (Broad) & Medium volume (Niche)
+        - Low volume (Community) & Branded/Campaign specific
+        - Analysis of which hashtags competitors are currently using successfully.`;
       } else if (activeTool === 'strategy') {
-        prompt = `Generate a comprehensive 30-day digital marketing strategy for ${input1}. 
+        prompt = `Generate a comprehensive professional 30-day digital marketing strategy for: "${input1}". 
         Goal: ${input2 || 'Brand Awareness & Growth'}.
-        Include:
-        - Weekly themes
-        - Content mix (Educational, Promotional, Interactive)
-        - Key performance indicators (KPIs) to track
-        - Budget allocation suggestions.`;
+        Using real-time internet search and competitive benchmarking, include:
+        - Weekly themes & Content mix (Educational, Promotional, Interactive)
+        - Competitive Counter-Moves: Specific tactics to outperform top competitors
+        - Mobile-First Approach: How to optimize the entire 30-day funnel for mobile users
+        - Key performance indicators (KPIs) & Budget allocation suggestions.`;
       } else if (activeTool === 'youtube-seo') {
         prompt = `First, use Google Search to find and review the content of the YouTube video at ${input1}. 
         You MUST attempt to find the video's current title, full description, and if available, the transcript or a detailed summary of the video content.
@@ -194,61 +194,59 @@ export function Tools() {
         
         Tailor all metadata for: ${input2 || 'General Audience'}.`;
       } else if (activeTool === 'roi') {
-        prompt = `Calculate and analyze the Marketing ROI for a campaign with:
+        prompt = `Perform a professional ROI analysis and competitive benchmarking for a campaign with:
         - Total Spend: ₹${input1}
         - Total Revenue/Conversions: ₹${input2 || '0'}
-        Provide:
-        - ROI Percentage
-        - Cost Per Acquisition (CPA) in ₹
-        - Return on Ad Spend (ROAS)
-        - 3 Strategic suggestions to improve these metrics.`;
+        Using real-time industry data, provide:
+        - ROI, ROAS, and CPA calculations
+        - Benchmarking: How these results compare to industry averages for similar campaigns
+        - 3 Actionable steps to improve ROI based on current market efficiencies.`;
       } else if (activeTool === 'abtest') {
-        prompt = `Create a detailed A/B test plan for: ${input1}. 
-        Goal: ${input2 || 'Improve Conversion Rate'}.
-        Include:
-        - Hypothesis (If we change X, then Y will happen)
-        - Control (A) vs. Variant (B) details
-        - Key metrics to measure
-        - Minimum sample size suggestion
-        - Duration of the test.`;
+        prompt = `Design a professional, scientific A/B test plan for: "${input1}". 
+        Target Metric: ${input2 || 'Conversion Rate'}.
+        Using real-time data on conversion rate optimization (CRO) trends, provide:
+        - Hypothesis & Variable definitions (Control vs. Variant)
+        - Mobile-Specific Testing: Ideas for mobile-only A/B tests
+        - Sample size & Duration recommendations
+        - Competitive Insights: What top brands are currently testing in this niche.`;
       } else if (activeTool === 'brand-voice') {
-        prompt = `Analyze the following text and define the Brand Voice: "${input1}". 
-        Focus on: ${input2 || 'Tone, Style, and Vocabulary'}.
-        Provide:
-        - Voice Characteristics (3-5 adjectives)
-        - Do's and Don'ts for writing in this voice
-        - A sample rewrite of a generic marketing sentence in this voice.`;
+        prompt = `Perform a professional analysis to define and document the brand voice for: "${input1}". 
+        Focus Area: ${input2 || 'General Branding'}.
+        Using real-time internet search to analyze the brand's current presence (if any) and competitor tones, provide:
+        - Core Brand Personality Traits
+        - Tone & Style Guidelines (Do's and Don'ts)
+        - Sample messaging for different platforms (LinkedIn vs. TikTok)
+        - Competitive Differentiation: How this voice stands out from the competition.`;
       } else if (activeTool === 'product-desc') {
-        prompt = `Generate a compelling e-commerce product description for: ${input1}. 
-        Target Audience: ${input2 || 'General Consumers'}.
-        Include:
-        - Catchy Title
-        - Benefit-driven description
-        - Bulleted key features
-        - Call to action.`;
+        prompt = `Generate professional, high-converting product descriptions for: "${input1}". 
+        Target Audience: ${input2 || 'General'}.
+        Using real-time internet search to analyze top-performing e-commerce listings in this niche, provide:
+        - 3 Variations (Short, Story-driven, Feature-rich)
+        - SEO-optimized keywords for product search
+        - Mobile-First Formatting: Bullet points and scannable text for mobile shoppers
+        - Competitive Edge: Highlighting USPs that competitors are missing.`;
       } else if (activeTool === 'bio-gen') {
-        prompt = `Generate 3 creative social media bios for: ${input1}. 
-        Platform: ${input2 || 'Instagram/Twitter'}.
-        Include:
-        - Professional version
-        - Creative/Witty version
-        - Minimalist version
-        - Relevant emojis and a CTA.`;
+        prompt = `Generate 5 professional and creative social media bios for: "${input1}". 
+        Platform: ${input2 || 'Instagram/LinkedIn'}.
+        Using real-time data on high-converting bio trends, provide:
+        - 5 Variations (Professional, Witty, Minimalist, etc.)
+        - Mobile Optimization: Effective use of emojis and line breaks for mobile readability
+        - Link-in-bio strategy suggestions.`;
       } else if (activeTool === 'video-script') {
-        prompt = `Write a high-engagement short-form video script (TikTok/Reels/Shorts) for: ${input1}. 
-        Goal: ${input2 || 'Viral Growth'}.
-        Include:
+        prompt = `Write a professional, high-engagement video script for: "${input1}". 
+        Video Goal: ${input2 || 'Educational/Viral'}.
+        Using real-time data on trending video formats (TikTok/Reels/Shorts), provide:
         - The Hook (first 3 seconds)
-        - The Body (value/story)
-        - The CTA (ending)
-        - Visual/Audio cues.`;
+        - Visual & Audio cues for each scene
+        - Call to Action (CTA) optimized for mobile interaction
+        - Competitive Analysis: What makes this script more engaging than current trending videos in this niche.`;
       } else if (activeTool === 'review-reply') {
-        prompt = `Generate a professional and empathetic response to this customer review: "${input1}". 
-        Review Sentiment: ${input2 || 'General'}.
-        Ensure the response:
-        - Acknowledges the feedback
-        - Addresses specific points
-        - Maintains a helpful brand tone.`;
+        prompt = `Generate professional and thoughtful responses to this customer review: "${input1}". 
+        Sentiment: ${input2 || 'Analyze automatically'}.
+        Using real-time data on brand reputation management, provide:
+        - 3 Variations (Professional, Empathetic, Action-oriented)
+        - SEO benefits: Incorporating keywords naturally into the reply
+        - Strategy for turning a negative review into a positive brand moment.`;
       } else if (activeTool === 'social-listening') {
         prompt = `Perform a professional social listening and sentiment analysis for the brand/topic: "${input1}". 
         Context: ${input2 || 'General Sentiment'}.
@@ -259,109 +257,97 @@ export function Tools() {
         - Viral mentions or recent news events
         - Strategic engagement recommendations.`;
       } else if (activeTool === 'lead-magnet') {
-        prompt = `Generate 5 high-converting lead magnet ideas for: ${input1}. 
-        Target Audience: ${input2 || 'Potential Customers'}.
-        For each idea, provide:
-        - Title
-        - Format (e.g., PDF, Webinar, Quiz)
-        - The "Big Promise" (Value Proposition)
-        - A simple opt-in page headline.`;
+        prompt = `Perform professional internet research to generate 5 high-converting lead magnet ideas for: "${input1}". 
+        Target Audience: ${input2 || 'General'}.
+        Using real-time search data, provide:
+        - 5 Unique Lead Magnet concepts (e.g., Checklists, Webinars, Tools)
+        - Landing Page Hook & Value Proposition for each
+        - Mobile-First Delivery: How to ensure the lead magnet is easily consumable on mobile.`;
       } else if (activeTool === 'email-sequence') {
-        prompt = `Create a 5-email welcome sequence for: ${input1}. 
-        Goal: ${input2 || 'Nurture & Convert'}.
-        Outline:
-        - Email 1: The Welcome & Value
-        - Email 2: The Logic/Problem
-        - Email 3: The Solution/Proof
-        - Email 4: The Offer/Urgency
-        - Email 5: The Final Call/FAQ.`;
+        prompt = `Plan a professional 5-step email nurture sequence for: "${input1}". 
+        Goal: ${input2 || 'Conversion/Onboarding'}.
+        Using real-time data on email automation best practices, provide:
+        - Subject lines & Core message for each of the 5 emails
+        - Timing & Trigger recommendations
+        - Mobile Optimization: Ensuring every email is perfectly readable on mobile devices.`;
       } else if (activeTool === 'landing-page') {
-        prompt = `Generate a high-converting landing page structure and copy for: ${input1}. 
-        Primary Goal: ${input2 || 'Lead Generation'}.
-        Include:
-        - Hero Headline & Sub-headline
-        - Problem/Solution sections
-        - Key Benefits (3-5)
-        - Social Proof placement ideas
-        - Primary and Secondary CTAs.`;
+        prompt = `Generate a professional structure and high-converting copy for a landing page for: "${input1}". 
+        Primary Goal: ${input2 || 'Lead Generation/Sales'}.
+        Using real-time internet search and competitive benchmarking, provide:
+        - Headline, Sub-headline, and Hero Section copy
+        - Benefit-driven features & Social Proof sections
+        - Mobile Responsiveness Plan: Specific layout advice for mobile-first users
+        - Competitive Analysis: How this LP outperforms top competitors in the niche.`;
       } else if (activeTool === 'campaign-brief') {
-        prompt = `Perform professional internet research and create a Marketing Campaign Brief for: "${input1}". 
-        Campaign Goal: ${input2 || 'Product Launch'}.
-        Using real-time market data, include:
-        - Campaign Objectives (SMART goals)
-        - Detailed Target Audience Personas
-        - Key Messaging & Value Proposition
-        - Channel Strategy (Social, Email, Ads) based on current platform trends
-        - Creative Requirements & Budget allocation suggestions.`;
+        prompt = `Create a professional, comprehensive campaign brief for: "${input1}". 
+        Goal: ${input2 || 'Growth/Launch'}.
+        Using real-time internet search and professional standards, include:
+        - Campaign Objectives & Target Audience
+        - Messaging Pillars & Creative Direction
+        - Competitive Benchmarking: Analysis of similar successful campaigns
+        - Channel Strategy & Success Metrics.`;
       } else if (activeTool === 'social-reply') {
-        prompt = `Generate 3 variations of a social media reply for this comment: "${input1}". 
-        Brand Tone: ${input2 || 'Friendly & Professional'}.
-        Include:
-        - A helpful/informative reply
-        - A witty/engaging reply
-        - A short/minimalist reply.`;
+        prompt = `Draft professional and engaging replies to this social media comment: "${input1}". 
+        Brand Tone: ${input2 || 'Friendly & Helpful'}.
+        Using real-time data on social media engagement trends, provide:
+        - 3 Variations (Helpful, Witty, Brand-aligned)
+        - Strategy for driving further engagement or conversion from the comment.`;
       } else if (activeTool === 'content-calendar') {
-        prompt = `Generate a 7-day social media content calendar for: ${input1}. 
+        prompt = `Generate a professional 7-day strategic social media content calendar for: "${input1}". 
         Platforms: ${input2 || 'Instagram & LinkedIn'}.
-        Include:
-        - Day-by-day post topics
-        - Suggested content formats
-        - Best time to post (estimated)
-        - Engagement prompt for each day.`;
+        Using real-time internet search for trending topics in this niche, provide:
+        - Day-by-day post topics, formats, and estimated best times to post
+        - Mobile-First Content: Suggestions for vertical video, carousels, and mobile-friendly captions
+        - Engagement prompts & Hashtag strategy for each day.`;
       } else if (activeTool === 'ad-budget') {
-        prompt = `Optimize an ad budget of ₹${input1} for a ${input2 || 'Digital Marketing'} campaign. 
-        Provide:
+        prompt = `Perform a professional ad budget optimization for a total spend of ₹${input1}. 
+        Campaign Type: ${input2 || 'Digital Marketing'}.
+        Using real-time data on current ad platform costs (CPM/CPC), provide:
         - Recommended allocation across channels (Meta, Google, TikTok, etc.)
-        - Estimated Reach/Impressions
-        - Target CPC/CPA benchmarks in ₹
-        - Scaling strategy (how to increase spend if successful).`;
+        - Estimated Reach, Impressions, and Conversions based on current benchmarks
+        - Scaling strategy & Competitive cost analysis.`;
       } else if (activeTool === 'lead-scorer') {
-        prompt = `Analyze and score this lead: "${input1}". 
-        Context: ${input2 || 'B2B SaaS'}.
-        Provide:
-        - Lead Score (0-100)
-        - Qualification Status (MQL, SQL, or Junk)
-        - Key Strengths/Weaknesses of the lead
-        - Recommended next action for sales.`;
+        prompt = `Perform a professional AI lead qualification and scoring for: "${input1}". 
+        Industry/Context: ${input2 || 'B2B SaaS'}.
+        Using real-time data on lead quality benchmarks, provide:
+        - Lead Score (0-100) & Qualification Status (MQL, SQL, or Junk)
+        - Detailed analysis of strengths/weaknesses
+        - Recommended next action for the sales team.`;
       } else if (activeTool === 'sales-script') {
-        prompt = `Generate a professional sales script for: ${input1}. 
-        Type: ${input2 || 'Cold Call'}.
-        Include:
-        - The Hook/Opening
-        - Value Proposition
-        - Handling 2 common objections
-        - The Close/Next Step.`;
+        prompt = `Generate a professional, high-converting sales script for: "${input1}". 
+        Script Type: ${input2 || 'Cold Call/Discovery'}.
+        Using real-time data on successful sales methodologies, provide:
+        - The Hook, Value Proposition, and Objection Handling
+        - The Close & Next Step
+        - Competitive Edge: How to position against common competitor objections.`;
       } else if (activeTool === 'crisis-comms') {
-        prompt = `Draft a crisis communication response for: "${input1}". 
-        Severity: ${input2 || 'Medium'}.
-        Include:
-        - Official Statement
-        - Internal talking points for staff
-        - Social media response template
-        - Recommended channel strategy.`;
+        prompt = `Draft a professional crisis communication strategy and response for: "${input1}". 
+        Severity: ${input2 || 'Medium/High'}.
+        Using real-time data on brand reputation management, provide:
+        - Official Statement & Internal talking points
+        - Social media response templates & Channel strategy
+        - Monitoring plan to track sentiment recovery.`;
       } else if (activeTool === 'press-release') {
-        prompt = `Write a professional press release for: ${input1}. 
-        Announcement Type: ${input2 || 'Product Launch'}.
-        Include:
-        - Catchy Headline & Dateline
-        - Lead Paragraph (Who, What, When, Where, Why)
-        - Executive Quote placeholder
-        - Boilerplate & Media Contact info.`;
+        prompt = `Write a professional, news-ready press release for: "${input1}". 
+        Announcement Type: ${input2 || 'Product Launch/Major News'}.
+        Using real-time PR standards and trending news formats, include:
+        - Catchy Headline, Dateline, and Lead Paragraph
+        - Executive Quote placeholder & Boilerplate
+        - Media Contact info & Distribution strategy.`;
       } else if (activeTool === 'link-bio') {
-        prompt = `Optimize a Link-in-bio page for: ${input1}. 
-        Primary Goal: ${input2 || 'Drive Traffic'}.
-        Suggest:
-        - 5 High-priority links with catchy titles
-        - Profile bio optimization
-        - Visual layout suggestions
-        - Tracking/Analytics strategy.`;
+        prompt = `Perform a professional optimization of a Link-in-bio page for: "${input1}". 
+        Primary Goal: ${input2 || 'Drive Conversions'}.
+        Using real-time data on high-performing mobile landing pages, suggest:
+        - 5 High-priority links with conversion-optimized titles
+        - Mobile-First Layout: Visual hierarchy and button placement for mobile users
+        - Tracking & Analytics strategy.`;
       } else if (activeTool === 'advocacy') {
-        prompt = `Generate an Employee Advocacy post for: ${input1}. 
+        prompt = `Generate a professional Employee Advocacy content set for: "${input1}". 
         Tone: ${input2 || 'Proud & Professional'}.
-        Provide:
-        - 3 Variations of the post for employees to share
-        - Why this matters to the company
-        - Suggested image/video type.`;
+        Using real-time data on employee advocacy trends, provide:
+        - 3 Variations of the post for employees to share on LinkedIn/Twitter
+        - Why this matters to the brand's reach
+        - Suggested visual assets for maximum engagement.`;
       } else if (activeTool === 'content-curation') {
         prompt = `Find and curate 5 high-quality content pieces (articles, videos, or news) for the topic: "${input1}". 
         Target Audience: ${input2 || 'General'}.
@@ -404,12 +390,12 @@ export function Tools() {
         - 5 High-potential sub-niches or blue-ocean opportunities
         - Regulatory or technological shifts to watch.`;
       } else if (activeTool === 'content-repurpose') {
-        prompt = `Repurpose the following content/topic into 5 different social media formats: "${input1}". 
+        prompt = `Perform a professional content repurposing strategy for: "${input1}". 
         Target Audience: ${input2 || 'General'}.
-        Provide:
+        Using real-time data on high-performing content formats, repurpose into:
         - 1 LinkedIn Thought Leadership Post
-        - 1 Instagram Carousel Outline (5 slides)
-        - 1 Twitter/X Thread (5-7 tweets)
+        - 1 Instagram Carousel Outline (Mobile-optimized)
+        - 1 Twitter/X Thread
         - 1 Short-form Video Script (TikTok/Reels)
         - 1 Email Newsletter Segment.`;
       } else if (activeTool === 'keyword-gap') {
@@ -422,13 +408,103 @@ export function Tools() {
         - Content strategy to capture these gaps
         - Estimated traffic potential.`;
       } else if (activeTool === 'report-gen') {
-        prompt = `Generate a professional monthly marketing report summary for: "${input1}". 
-        Key Results: ${input2 || 'General Performance'}.
-        Include:
-        - Executive Summary
-        - Key Wins & Achievements
-        - Metrics Breakdown (Reach, Engagement, Conversions)
-        - Next Month's Focus & Recommendations.`;
+        prompt = `Generate a professional, executive-level marketing report summary for: "${input1}". 
+        Key Results/Metrics: ${input2 || 'General Performance'}.
+        Using real-time data visualization best practices, include:
+        - Executive Summary & Key Wins
+        - Metrics Breakdown (Reach, Engagement, Conversions) with industry benchmarking
+        - Next Month's Strategic Focus & Recommendations.`;
+      } else if (activeTool === 'competitor-pricing') {
+        prompt = `Perform a professional internet research and competitive pricing analysis for: "${input1}". 
+        Competitors: ${input2 || 'Identify top 3 automatically'}.
+        Using real-time search data, provide:
+        - Pricing models of top competitors (Subscription, One-time, Tiered, etc.)
+        - Estimated price points and value propositions
+        - Discounting and promotion strategies observed
+        - Strategic recommendations for your own pricing to remain competitive.`;
+      } else if (activeTool === 'ad-creative') {
+        prompt = `Generate professional ad creative concepts and visual ideas for: "${input1}". 
+        Platform: ${input2 || 'Meta/Instagram'}.
+        Using real-time data on high-performing visual trends, provide:
+        - 3 Creative Concepts (e.g., User-Generated Content style, Minimalist, Bold Typography)
+        - Detailed visual descriptions for images/videos
+        - Color palette and font recommendations based on current design trends
+        - Mobile-First Design: Ensuring visuals are optimized for small screens and vertical formats.`;
+      } else if (activeTool === 'site-audit') {
+        prompt = `As a Senior Technical SEO Auditor, perform a professional deep-dive research on the website: ${input1}
+        Focus Area: ${input2 || "General SEO Health"}
+        
+        Please provide a comprehensive Site Audit Report including:
+        1. **Technical SEO Issues**: Potential crawl errors, site speed bottlenecks, and mobile-friendliness issues.
+        2. **On-Page Optimization**: Analysis of meta tags, header structures, and keyword density.
+        3. **Content Quality**: Evaluation of E-E-A-T signals and content gaps.
+        4. **Actionable Fixes**: Priority list of technical and content improvements to boost rankings.`;
+      } else if (activeTool === 'rank-tracker') {
+        prompt = `As an SEO Strategist, analyze the search engine ranking potential for:
+        Website/URL: ${input1}
+        Target Keywords: ${input2}
+        
+        Please provide:
+        1. **Estimated Current Position**: Based on current SERP data for these keywords.
+        2. **Competitor Comparison**: Who is currently outranking this site and why.
+        3. **Ranking Difficulty**: A score from 1-100 and explanation.
+        4. **Optimization Strategy**: Specific steps to move to the top 3 positions.`;
+      } else if (activeTool === 'backlink-checker') {
+        prompt = `As a Link Building Expert, perform deep research on the backlink profile and authority of: ${input1}
+        Competitors to compare: ${input2}
+        
+        Please provide:
+        1. **Authority Analysis**: Estimated Domain Authority and Trust Flow.
+        2. **Backlink Opportunities**: High-authority sites in this niche that are likely to link back.
+        3. **Competitor Backlink Gaps**: Where competitors have links that this site is missing.
+        4. **Link Building Strategy**: A 4-week plan to acquire high-quality, relevant backlinks.`;
+      } else if (activeTool === 'robots-sitemap') {
+        prompt = `As a Technical SEO Specialist, generate a professional Robots.txt and Sitemap structure for:
+        Website URL: ${input1}
+        Specific Requirements: ${input2}
+        
+        Please provide:
+        1. **Optimized Robots.txt**: Including proper Allow/Disallow rules and sitemap reference.
+        2. **XML Sitemap Structure**: A logical hierarchy of pages to be indexed.
+        3. **Indexing Strategy**: Tips on how to ensure Google crawls the most important pages first.`;
+      } else if (activeTool === 'url-shortener') {
+        prompt = `As a Digital Marketer, suggest a professional URL shortening and tracking strategy for:
+        Long URL: ${input1}
+        Campaign Name/Context: ${input2}
+        
+        Please provide:
+        1. **Branded Short Link Suggestions**: Using custom domains or professional slugs.
+        2. **Tracking Parameter Setup (UTM)**: The exact UTM string to append for accurate analytics.
+        3. **QR Code Usage Strategy**: Where and how to use a QR code for this link to maximize offline-to-online conversion.`;
+      } else if (activeTool === 'qr-generator') {
+        prompt = `As a Creative Designer, provide a strategy for a custom, high-converting QR code for:
+        Target URL/Content: ${input1}
+        Brand Style/Context: ${input2}
+        
+        Please provide:
+        1. **Design Concept**: How to style the QR code (colors, logo integration, frame) to match the brand.
+        2. **Call-to-Action (CTA)**: The perfect text to place around the QR code to encourage scans.
+        3. **Placement Strategy**: The best physical or digital locations to place this QR code for maximum engagement.`;
+      } else if (activeTool === 'contract-gen') {
+        prompt = `As a Professional Freelance Consultant, generate a comprehensive Service Agreement/Contract outline for:
+        Service/Project: ${input1}
+        Client Details & Terms: ${input2}
+        
+        Please provide a professional contract structure including:
+        1. **Scope of Work**: Detailed breakdown of deliverables.
+        2. **Payment Terms**: Milestone-based structure and late fee clauses.
+        3. **IP & Confidentiality**: Standard protection for both parties.
+        4. **Termination & Dispute Resolution**: Clear exit strategy and legal jurisdiction.`;
+      } else if (activeTool === 'time-estimate') {
+        prompt = `As a Project Manager, provide a professional time and cost estimate for:
+        Project/Task: ${input1}
+        Complexity/Details: ${input2}
+        
+        Please provide:
+        1. **Phase Breakdown**: Estimated hours for Research, Design, Development, and Testing.
+        2. **Total Estimated Hours**: A realistic range (Min-Max).
+        3. **Resource Requirements**: What tools or additional help might be needed.
+        4. **Risk Assessment**: Potential bottlenecks that could delay the project.`;
       }
 
       if (activeTool === 'utm') {
@@ -441,7 +517,14 @@ export function Tools() {
           'market-research', 'keyword-gap', 'social-listening', 
           'social-audit', 'ads', 'seo', 'campaign-brief', 
           'crisis-comms', 'report-gen', 'content-curation',
-          'post-optimizer', 'community-mgr'
+          'post-optimizer', 'community-mgr', 'email', 'hashtag',
+          'roi', 'abtest', 'brand-voice', 'product-desc', 'bio-gen',
+          'video-script', 'review-reply', 'lead-magnet', 'email-sequence',
+          'landing-page', 'social-reply', 'content-calendar', 'ad-budget',
+          'lead-scorer', 'sales-script', 'press-release', 'link-bio',
+          'advocacy', 'content-repurpose', 'competitor-pricing', 'ad-creative',
+          'site-audit', 'rank-tracker', 'backlink-checker', 'robots-sitemap',
+          'url-shortener', 'qr-generator', 'contract-gen', 'time-estimate'
         ].includes(activeTool);
 
         const response = await ai.models.generateContent({
@@ -516,11 +599,17 @@ export function Tools() {
   const tools = [
     { id: 'strategy', name: 'Strategy Gen', icon: Sparkles, desc: '30-day campaign plan', category: 'Strategy' },
     { id: 'competitor', name: 'Competitor Analysis', icon: Search, desc: 'Analyze market gaps & strategy', category: 'Strategy' },
+    { id: 'competitor-pricing', name: 'Competitor Pricing', icon: Coins, desc: 'Analyze competitor pricing models', category: 'Strategy' },
     { id: 'market-research', name: 'Market Research', icon: Globe, desc: 'Deep dive into niche trends', category: 'Strategy' },
     { id: 'roi', name: 'ROI Calc', icon: Calculator, desc: 'Analyze campaign ROI', category: 'Strategy' },
     { id: 'abtest', name: 'A/B Planner', icon: Split, desc: 'Design experiments', category: 'Strategy' },
     
     { id: 'ads', name: 'Ad Copy', icon: Megaphone, desc: 'High-converting ad copy', category: 'Content' },
+    { id: 'ad-creative', name: 'Ad Creative', icon: ImageIcon, desc: 'Visual concepts for ads', category: 'Content' },
+    { id: 'site-audit', name: 'Site Audit', icon: Search, desc: 'Deep technical SEO website audit', category: 'SEO' },
+    { id: 'rank-tracker', name: 'Rank Tracker', icon: TrendingUpIcon, desc: 'Analyze keyword ranking potential', category: 'SEO' },
+    { id: 'backlink-checker', name: 'Backlink Checker', icon: LinkIcon, desc: 'Analyze backlink profile and gaps', category: 'SEO' },
+    { id: 'robots-sitemap', name: 'SEO Utilities', icon: FileText, desc: 'Generate Robots.txt and Sitemaps', category: 'SEO' },
     { id: 'video-script', name: 'Video Script', icon: Video, desc: 'TikTok/Reels/Shorts scripts', category: 'Content' },
     { id: 'content-repurpose', name: 'Repurpose AI', icon: ZapIcon, desc: 'Blog to social content', category: 'Content' },
     { id: 'product-desc', name: 'Product Desc', icon: ShoppingBag, desc: 'E-commerce product copy', category: 'Content' },
@@ -554,8 +643,12 @@ export function Tools() {
     { id: 'link-bio', name: 'Link-in-Bio', icon: ExternalLink, desc: 'Optimize social links', category: 'Enterprise' },
     { id: 'advocacy', name: 'Advocacy Post', icon: HeartHandshake, desc: 'Employee advocacy content', category: 'Enterprise' },
     { id: 'report-gen', name: 'Report Gen', icon: FileBarChart, desc: 'Monthly client reports', category: 'Enterprise' },
+    { id: 'contract-gen', name: 'Contract Gen', icon: FileText, desc: 'Generate professional service agreements', category: 'Enterprise' },
+    { id: 'time-estimate', name: 'Time Estimate', icon: Clock, desc: 'Professional project time & cost estimation', category: 'Enterprise' },
     
     { id: 'content-curation', name: 'Content Curation', icon: Library, desc: 'Find & share relevant content', category: 'Utilities' },
+    { id: 'url-shortener', name: 'URL Strategy', icon: LinkIcon, desc: 'Shorten links and setup UTM tracking', category: 'Utilities' },
+    { id: 'qr-generator', name: 'QR Strategy', icon: Layout, desc: 'Design high-converting QR codes', category: 'Utilities' },
     { id: 'social-audit', name: 'Social Audit', icon: ClipboardCheck, desc: 'Analyze profile performance', category: 'Utilities' },
     { id: 'post-optimizer', name: 'Post Optimizer', icon: Clock, desc: 'Best times to post', category: 'Utilities' },
     { id: 'community-mgr', name: 'Community Manager', icon: UserPlus, desc: 'Engagement & loyalty strategy', category: 'Utilities' },
@@ -567,9 +660,9 @@ export function Tools() {
     t.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const categories = ['Strategy', 'Content', 'Growth', 'Enterprise', 'Utilities'];
+  const categories = ['Strategy', 'Content', 'Growth', 'SEO', 'Enterprise', 'Utilities'];
 
-  const newTools = ['competitor', 'social-listening', 'campaign-brief', 'lead-magnet', 'email-sequence', 'landing-page', 'social-reply', 'content-calendar', 'ad-budget', 'lead-scorer', 'sales-script', 'crisis-comms', 'press-release', 'link-bio', 'advocacy', 'content-curation', 'social-audit', 'post-optimizer', 'community-mgr', 'report-gen', 'youtube-seo'];
+  const newTools = ['competitor', 'social-listening', 'campaign-brief', 'lead-magnet', 'email-sequence', 'landing-page', 'social-reply', 'content-calendar', 'ad-budget', 'lead-scorer', 'sales-script', 'crisis-comms', 'press-release', 'link-bio', 'advocacy', 'content-curation', 'social-audit', 'post-optimizer', 'community-mgr', 'report-gen', 'youtube-seo', 'competitor-pricing', 'ad-creative', 'site-audit', 'rank-tracker', 'backlink-checker', 'robots-sitemap', 'url-shortener', 'qr-generator', 'contract-gen', 'time-estimate'];
 
   return (
     <div className="space-y-4 md:space-y-8 pb-10">
@@ -937,6 +1030,14 @@ export function Tools() {
                         activeTool === 'content-repurpose' ? "Source Content/Topic" :
                         activeTool === 'keyword-gap' ? "Your Brand/Niche" :
                         activeTool === 'social-audit' ? "Profile URL or Name" :
+                        activeTool === 'site-audit' ? "Website URL" :
+                        activeTool === 'rank-tracker' ? "Website URL" :
+                        activeTool === 'backlink-checker' ? "Website URL" :
+                        activeTool === 'robots-sitemap' ? "Website URL" :
+                        activeTool === 'url-shortener' ? "Long URL" :
+                        activeTool === 'qr-generator' ? "Target URL/Content" :
+                        activeTool === 'contract-gen' ? "Service/Project Name" :
+                        activeTool === 'time-estimate' ? "Project/Task Name" :
                         activeTool === 'advocacy' ? "Company News/Topic" : "Product/Service Name"}
                       </label>
                       {input1 && (
@@ -981,8 +1082,18 @@ export function Tools() {
                                      activeTool === 'post-optimizer' ? "e.g., Tech Startup" :
                                      activeTool === 'community-mgr' ? "e.g., SaaS Users Group" :
                                      activeTool === 'report-gen' ? "e.g., Acme Corp Q1" : 
+                                     activeTool === 'competitor-pricing' ? "e.g., SaaS, E-commerce" :
+                                     activeTool === 'ad-creative' ? "e.g., Instagram, Facebook" :
                                      activeTool === 'market-research' ? "e.g., Electric Vehicles in India" :
-                                     activeTool === 'keyword-gap' ? "e.g., Sustainable Fashion Brand" : "e.g., Luxury Watches"} 
+                                     activeTool === 'keyword-gap' ? "e.g., Sustainable Fashion Brand" : 
+                                     activeTool === 'site-audit' ? "e.g., https://example.com" :
+                                     activeTool === 'rank-tracker' ? "e.g., https://example.com" :
+                                     activeTool === 'backlink-checker' ? "e.g., https://example.com" :
+                                     activeTool === 'robots-sitemap' ? "e.g., https://example.com" :
+                                     activeTool === 'url-shortener' ? "e.g., https://very-long-url.com/..." :
+                                     activeTool === 'qr-generator' ? "e.g., https://example.com/promo" :
+                                     activeTool === 'contract-gen' ? "e.g., Web Development Services" :
+                                     activeTool === 'time-estimate' ? "e.g., E-commerce App Development" : "e.g., Luxury Watches"} 
                         value={input1}
                         onChange={(e) => {
                           setInput1(e.target.value);
@@ -1032,8 +1143,18 @@ export function Tools() {
                          activeTool === 'keyword-gap' ? "Competitor (optional)" :
                          activeTool === 'content-curation' ? "Target Audience" :
                          activeTool === 'social-audit' ? "Competitors & Platforms" :
+                         activeTool === 'site-audit' ? "Focus Area (e.g., Speed, Mobile)" :
+                         activeTool === 'rank-tracker' ? "Target Keywords" :
+                         activeTool === 'backlink-checker' ? "Competitors to compare" :
+                         activeTool === 'robots-sitemap' ? "Specific Requirements" :
+                         activeTool === 'url-shortener' ? "Campaign Name / Context" :
+                         activeTool === 'qr-generator' ? "Brand Style / Context" :
+                         activeTool === 'contract-gen' ? "Client Details & Terms" :
+                         activeTool === 'time-estimate' ? "Complexity / Details" :
                          activeTool === 'post-optimizer' ? "Target Platform" :
                          activeTool === 'community-mgr' ? "Primary Goal" :
+                         activeTool === 'competitor-pricing' ? "Competitors (optional)" :
+                         activeTool === 'ad-creative' ? "Target Platform" :
                          activeTool === 'report-gen' ? "Key Results/Metrics" : "Source (e.g., facebook)"}
                       </label>
                       {input2 && (
@@ -1069,7 +1190,17 @@ export function Tools() {
                                    activeTool === 'market-research' ? "e.g., Consumer Behavior" :
                                    activeTool === 'content-repurpose' ? "e.g., Gen Z" :
                                    activeTool === 'keyword-gap' ? "e.g., Competitor.com" : 
-                                   activeTool === 'social-audit' ? "e.g., Competitor1, Competitor2, Instagram" : "e.g., Instagram, Real Estate, Sale"} 
+                                   activeTool === 'competitor-pricing' ? "e.g., Competitor1, Competitor2" :
+                                   activeTool === 'ad-creative' ? "e.g., Instagram, Facebook" :
+                                   activeTool === 'social-audit' ? "e.g., Competitor1, Competitor2, Instagram" :
+                                   activeTool === 'site-audit' ? "e.g., Speed, Mobile, Accessibility" :
+                                   activeTool === 'rank-tracker' ? "e.g., digital marketing tools, SEO agency" :
+                                   activeTool === 'backlink-checker' ? "e.g., competitor1.com, competitor2.com" :
+                                   activeTool === 'robots-sitemap' ? "e.g., Disallow /admin, Priority 1.0" :
+                                   activeTool === 'url-shortener' ? "e.g., Summer Sale 2024" :
+                                   activeTool === 'qr-generator' ? "e.g., Minimalist, Blue Theme" :
+                                   activeTool === 'contract-gen' ? "e.g., ₹50,000, Net 15" :
+                                   activeTool === 'time-estimate' ? "e.g., High Complexity, 2 Developers" : "e.g., Instagram, Real Estate, Sale"}
                       value={input2}
                       onChange={(e) => {
                         setInput2(e.target.value);
