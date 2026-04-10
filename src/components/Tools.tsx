@@ -119,6 +119,12 @@ export function Tools() {
     setError(null);
     
     try {
+      if (!process.env.GEMINI_API_KEY) {
+        setError("API Key is missing. If you are on Vercel, please add GEMINI_API_KEY to your environment variables. If you are in the preview, please ensure the key is set in the settings.");
+        setLoading(false);
+        return;
+      }
+
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       let prompt = "";
 
@@ -546,8 +552,8 @@ export function Tools() {
           contents: prompt,
           config: {
             systemInstruction,
-            ...(isDeepSearchTool ? { tools: [{ googleSearch: {} }] } : {})
-          }
+          },
+          ...(isDeepSearchTool ? { tools: [{ googleSearch: {} }] } : {})
         });
         const text = response.text || "No result generated.";
         
