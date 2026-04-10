@@ -122,389 +122,403 @@ export function Tools() {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       let prompt = "";
 
+      const systemInstruction = `You are a Senior Digital Marketing Strategist and Market Research Expert with 15+ years of experience in high-growth startups and Fortune 500 companies. 
+      Your goal is to provide deep, professional, and actionable insights. 
+      - Always perform multi-step research using Google Search to find the latest data, trends, and competitor activities.
+      - NEVER provide generic or "common" answers. Every response must be tailored specifically to the user's input.
+      - Use data-driven reasoning and cite specific examples or trends where possible.
+      - Maintain a professional, executive-level tone.
+      - Format your output with clear headings, bullet points, and bold text for readability.
+      - Focus on ROI and actionable steps that can be implemented immediately.`;
+
       if (activeTool === 'ads') {
-        prompt = `Perform professional internet research on current high-performing ad trends and competitor strategies for: "${input1}". 
+        prompt = `As a Senior Performance Marketer, perform deep research on current high-performing ad trends and competitor strategies for: "${input1}". 
         Target Platform: ${input2 || 'Google/Meta'}.
-        Using real-time search data, generate 3 high-converting ad copies including:
-        - Catchy Headlines & Benefit-driven Primary Text
-        - Strategic CTAs optimized for mobile users
-        - Competitive Analysis: How these ads outperform current competitor offerings
-        - Mobile Focus: Specific layout or visual suggestions for mobile-first ad formats.`;
+        Using real-time search data, generate 3 high-converting ad copies. 
+        For each variation, provide:
+        - A psychological hook and benefit-driven primary text.
+        - 3 Headline options optimized for CTR.
+        - Strategic CTA recommendations.
+        - Visual/Creative direction for the ad.
+        - Competitive Analysis: Explain exactly why this copy will outperform current competitor ads in this niche.`;
       } else if (activeTool === 'seo') {
-        prompt = `Perform a deep-dive SEO and keyword research for the topic: "${input1}". 
+        prompt = `As a Senior SEO Strategist, perform a deep-dive SEO and keyword research for the topic: "${input1}". 
         Focus Niche: ${input2 || 'General'}.
         Using real-time search data and competitive benchmarking, provide:
-        - 10 High-intent, trending SEO keywords with estimated difficulty and search volume
-        - 5 Long-tail keyword opportunities competitors are missing
-        - 3 Blog title ideas optimized for current search trends and mobile readability
-        - Content structure recommendations with a focus on mobile user experience (Core Web Vitals).`;
+        - 15 High-intent, trending SEO keywords with estimated difficulty, search volume, and search intent (Informational vs. Transactional).
+        - 5 "Content Gaps": Specific topics competitors are ignoring.
+        - A comprehensive content cluster strategy to build topical authority.
+        - Technical SEO recommendations specific to this niche (e.g., schema types, Core Web Vitals focus).
+        - 3 Blog title ideas with high organic CTR potential.`;
       } else if (activeTool === 'email') {
-        prompt = `Generate professional email marketing content for: "${input1}". 
+        prompt = `As a Direct Response Copywriter, generate professional email marketing content for: "${input1}". 
         Context: ${input2 || 'Marketing Newsletter'}.
-        Using real-time data on email marketing trends, provide:
-        - 5 High-open-rate subject lines (A/B test ideas)
-        - A structured email body with a clear hook, value, and CTA
-        - Mobile Optimization: Specific advice for mobile-friendly layouts and "fat-finger" CTAs
+        Using real-time data on email marketing trends and high-converting sequences, provide:
+        - 5 High-open-rate subject lines using different psychological triggers (Curiosity, Urgency, Benefit).
+        - A full, structured email body with a compelling hook, value-driven middle, and a single, clear CTA.
+        - Mobile Optimization: Specific formatting advice for mobile-first reading.
         - Competitive Edge: How to stand out in a crowded inbox based on current industry benchmarks.`;
       } else if (activeTool === 'competitor') {
-        prompt = `Using professional internet search and real-time data, perform a deep-dive digital marketing analysis for: "${input1}". 
+        prompt = `As a Competitive Intelligence Analyst, perform a deep-dive digital marketing analysis for: "${input1}". 
         Focus area: ${input2 || 'General Strategy'}.
         
-        Please provide a comprehensive report including:
-        1. **Target Audience Analysis**: Detailed breakdown of their primary and secondary audience segments, demographics, and psychographics.
-        2. **Content Themes & Messaging**: Analysis of their main content pillars, brand voice, and recurring messaging themes across social and web.
-        3. **Competitive Gaps**: Identify specific weaknesses, underserved audience segments, or missing content types in their current strategy.
-        4. **Counter-Strategies**: Actionable, step-by-step recommendations on how to out-position them and capture their market share.
-        5. **Unique Value Proposition (UVP)**: What makes them stand out, and how can we differentiate?
-        
-        Use recent information, specific examples, and data points if available.`;
+        Using professional internet search and real-time data, provide a comprehensive report:
+        1. **Market Positioning**: Where they stand vs. the market leader.
+        2. **Traffic & Acquisition Channels**: Analysis of where their audience comes from (Search, Social, Paid).
+        3. **Messaging & Creative Audit**: Deep dive into their brand voice and most successful ad/content themes.
+        4. **Vulnerability Analysis**: Identify 3 specific weaknesses in their strategy that we can exploit.
+        5. **Execution Roadmap**: A step-by-step plan to out-position them and capture their market share.`;
       } else if (activeTool === 'influencer') {
-        prompt = `Perform professional internet research to find 10 potential influencers or content creators in the niche: "${input1}". 
+        prompt = `As an Influencer Marketing Manager, perform deep research to find 10 potential influencers or content creators in the niche: "${input1}". 
         Platform Focus: ${input2 || 'Instagram/YouTube/TikTok'}.
         Using real-time search, provide for each:
-        - Name & Handle
-        - Creator type (Micro/Macro/Mega)
-        - Content style & Audience alignment
-        - Estimated engagement rates & recent viral content
-        - Why they are a strategic fit for this niche.`;
+        - Name, Handle, and estimated follower count.
+        - Detailed Content Analysis: What makes their content resonate?
+        - Audience Demographics: Who are they reaching?
+        - Estimated Engagement Rate vs. Industry Average.
+        - Partnership Strategy: A specific campaign idea for this creator.`;
       } else if (activeTool === 'hashtag') {
-        prompt = `Perform real-time internet research to generate a strategic set of 30 hashtags for: "${input1}". 
+        prompt = `As a Social Media Growth Expert, perform real-time research to generate a strategic set of 30 hashtags for: "${input1}". 
         Platform: ${input2 || 'Instagram'}.
-        Using current trending data, categorize them into:
-        - High volume (Broad) & Medium volume (Niche)
-        - Low volume (Community) & Branded/Campaign specific
-        - Analysis of which hashtags competitors are currently using successfully.`;
+        Using current trending data, provide:
+        - A categorized list: 5 Broad (1M+), 10 Niche (100k-500k), 10 Community (10k-50k), and 5 Branded/Trending.
+        - Analysis of "Banned" or "Shadowbanned" risks in this niche.
+        - Strategic advice on hashtag placement and quantity for maximum reach in 2024-2026.`;
       } else if (activeTool === 'strategy') {
-        prompt = `Generate a comprehensive professional 30-day digital marketing strategy for: "${input1}". 
+        prompt = `As a Senior Digital Marketing Consultant, generate a comprehensive 30-day digital marketing strategy for: "${input1}". 
         Goal: ${input2 || 'Brand Awareness & Growth'}.
         Using real-time internet search and competitive benchmarking, include:
-        - Weekly themes & Content mix (Educational, Promotional, Interactive)
-        - Competitive Counter-Moves: Specific tactics to outperform top competitors
-        - Mobile-First Approach: How to optimize the entire 30-day funnel for mobile users
-        - Key performance indicators (KPIs) & Budget allocation suggestions.`;
+        - **Phase 1 (Days 1-10): Foundation & Awareness** - Specific setup and launch tactics.
+        - **Phase 2 (Days 11-20): Engagement & Trust** - Content pillars and community building.
+        - **Phase 3 (Days 21-30): Conversion & Scaling** - Retargeting and sales-focused moves.
+        - **Competitive Counter-Moves**: Specific tactics to outperform top competitors identified during research.
+        - **KPI Dashboard**: Exactly what to measure to ensure ROI.`;
       } else if (activeTool === 'youtube-seo') {
-        prompt = `First, use Google Search to find and review the content of the YouTube video at ${input1}. 
-        You MUST attempt to find the video's current title, full description, and if available, the transcript or a detailed summary of the video content.
+        prompt = `As a YouTube Growth Specialist, perform deep research on the video at ${input1}. 
+        You MUST find the video's current title, description, and key content themes.
         
-        Based on your detailed review of the actual video content (not just the URL), generate:
-        1. **3 SEO-Friendly Titles**: Catchy, high-CTR, and keyword-rich, specifically tailored to the video's unique value proposition.
-        2. **Optimized Description**: Including a strong hook, a 2-3 paragraph summary of the video's actual content, key takeaways, and clear CTAs.
-        3. **15 Trending Hashtags**: Highly relevant to the specific topics and keywords identified in the video.
-        4. **20 High-Volume Keywords/Tags**: Strategic tags derived from the video's transcript and metadata for maximum search visibility.
-        
+        Based on your research, generate:
+        1. **3 High-CTR Titles**: Optimized for both search and "browse" features.
+        2. **The "Perfect" Description**: Including a 3-paragraph SEO-optimized summary, timestamps, and strategic links.
+        3. **Tag & Keyword Strategy**: 20 high-volume tags and 10 long-tail keywords.
+        4. **Thumbnail Direction**: Specific visual suggestions to increase click-through rate.
         Tailor all metadata for: ${input2 || 'General Audience'}.`;
       } else if (activeTool === 'roi') {
-        prompt = `Perform a professional ROI analysis and competitive benchmarking for a campaign with:
+        prompt = `As a Marketing Data Analyst, perform a professional ROI analysis and competitive benchmarking for:
         - Total Spend: ₹${input1}
         - Total Revenue/Conversions: ₹${input2 || '0'}
         Using real-time industry data, provide:
-        - ROI, ROAS, and CPA calculations
-        - Benchmarking: How these results compare to industry averages for similar campaigns
-        - 3 Actionable steps to improve ROI based on current market efficiencies.`;
+        - Detailed ROI, ROAS, and CPA calculations.
+        - **Industry Benchmark Comparison**: How these numbers stack up against the top 10% in this niche.
+        - **Optimization Roadmap**: 5 specific steps to lower CPA and increase ROAS by at least 20%.`;
       } else if (activeTool === 'abtest') {
-        prompt = `Design a professional, scientific A/B test plan for: "${input1}". 
+        prompt = `As a Conversion Rate Optimization (CRO) Expert, design a scientific A/B test plan for: "${input1}". 
         Target Metric: ${input2 || 'Conversion Rate'}.
-        Using real-time data on conversion rate optimization (CRO) trends, provide:
-        - Hypothesis & Variable definitions (Control vs. Variant)
-        - Mobile-Specific Testing: Ideas for mobile-only A/B tests
-        - Sample size & Duration recommendations
-        - Competitive Insights: What top brands are currently testing in this niche.`;
+        Using real-time data on CRO trends, provide:
+        - **The Hypothesis**: A clear "If [Change], then [Result]" statement.
+        - **Test Variables**: Detailed breakdown of the Control vs. Variant.
+        - **Statistical Significance**: Recommended sample size and duration.
+        - **Competitive Insights**: What the market leaders are currently testing in this area.`;
       } else if (activeTool === 'brand-voice') {
-        prompt = `Perform a professional analysis to define and document the brand voice for: "${input1}". 
+        prompt = `As a Brand Strategist, perform a professional analysis to define and document the brand voice for: "${input1}". 
         Focus Area: ${input2 || 'General Branding'}.
-        Using real-time internet search to analyze the brand's current presence (if any) and competitor tones, provide:
-        - Core Brand Personality Traits
-        - Tone & Style Guidelines (Do's and Don'ts)
-        - Sample messaging for different platforms (LinkedIn vs. TikTok)
-        - Competitive Differentiation: How this voice stands out from the competition.`;
+        Using real-time search to analyze the brand's current presence and competitor tones, provide:
+        - **The Brand Persona**: A detailed description of the brand as a person.
+        - **Voice Attributes**: 4 key adjectives with "This, Not That" examples.
+        - **Grammar & Style Rules**: Specific guidelines for punctuation, emoji use, and sentence structure.
+        - **Platform-Specific Adaptations**: How the voice shifts from LinkedIn to Instagram.`;
       } else if (activeTool === 'product-desc') {
-        prompt = `Generate professional, high-converting product descriptions for: "${input1}". 
+        prompt = `As a Senior E-commerce Copywriter, generate high-converting product descriptions for: "${input1}". 
         Target Audience: ${input2 || 'General'}.
-        Using real-time internet search to analyze top-performing e-commerce listings in this niche, provide:
-        - 3 Variations (Short, Story-driven, Feature-rich)
-        - SEO-optimized keywords for product search
-        - Mobile-First Formatting: Bullet points and scannable text for mobile shoppers
-        - Competitive Edge: Highlighting USPs that competitors are missing.`;
+        Using real-time search to analyze top-performing listings, provide:
+        - **The "Hero" Description**: A 150-word persuasive narrative.
+        - **Feature vs. Benefit Table**: Clearly mapping technical specs to user benefits.
+        - **SEO Bullet Points**: 5-7 scannable, keyword-rich points.
+        - **Competitive Edge**: Highlighting a unique selling proposition (USP) that competitors are missing.`;
       } else if (activeTool === 'bio-gen') {
-        prompt = `Generate 5 professional and creative social media bios for: "${input1}". 
+        prompt = `As a Social Media Branding Expert, generate 5 professional and creative social media bios for: "${input1}". 
         Platform: ${input2 || 'Instagram/LinkedIn'}.
         Using real-time data on high-converting bio trends, provide:
-        - 5 Variations (Professional, Witty, Minimalist, etc.)
-        - Mobile Optimization: Effective use of emojis and line breaks for mobile readability
-        - Link-in-bio strategy suggestions.`;
+        - 5 Variations ranging from "Authority-focused" to "Personality-driven".
+        - **Link-in-Bio Strategy**: What specific link and CTA should be used.
+        - **Visual Layout**: Suggestions for line breaks and emoji placement for mobile readability.`;
       } else if (activeTool === 'video-script') {
-        prompt = `Write a professional, high-engagement video script for: "${input1}". 
+        prompt = `As a Viral Content Creator, write a high-engagement video script for: "${input1}". 
         Video Goal: ${input2 || 'Educational/Viral'}.
-        Using real-time data on trending video formats (TikTok/Reels/Shorts), provide:
-        - The Hook (first 3 seconds)
-        - Visual & Audio cues for each scene
-        - Call to Action (CTA) optimized for mobile interaction
-        - Competitive Analysis: What makes this script more engaging than current trending videos in this niche.`;
+        Using real-time data on trending formats (TikTok/Reels/Shorts), provide:
+        - **The Hook (0-3s)**: 3 different high-retention hook options.
+        - **The Body**: A fast-paced, value-dense script with visual and audio cues.
+        - **The CTA**: A strategic "soft" or "hard" close.
+        - **Retention Strategy**: Specific edits or visual patterns to keep viewers watching.`;
       } else if (activeTool === 'review-reply') {
-        prompt = `Generate professional and thoughtful responses to this customer review: "${input1}". 
+        prompt = `As a Reputation Management Specialist, generate professional responses to this customer review: "${input1}". 
         Sentiment: ${input2 || 'Analyze automatically'}.
-        Using real-time data on brand reputation management, provide:
-        - 3 Variations (Professional, Empathetic, Action-oriented)
-        - SEO benefits: Incorporating keywords naturally into the reply
-        - Strategy for turning a negative review into a positive brand moment.`;
+        Using real-time data on brand loyalty, provide:
+        - 3 Variations: Professional, Empathetic, and Brand-Personality driven.
+        - **SEO Integration**: How to naturally include keywords in the reply to boost local SEO.
+        - **Escalation/Recovery Plan**: If negative, a specific path to resolve the issue offline.`;
       } else if (activeTool === 'social-listening') {
-        prompt = `Perform a professional social listening and sentiment analysis for the brand/topic: "${input1}". 
+        prompt = `As a Social Media Analyst, perform a professional social listening and sentiment analysis for: "${input1}". 
         Context: ${input2 || 'General Sentiment'}.
-        Using real-time internet search and social media data, provide:
-        - Detailed Sentiment Analysis (Positive/Neutral/Negative) with recent examples
-        - Top 5 Trending Conversations & Hashtags
-        - Major Customer Pain Points, Complaints, or Praises
-        - Viral mentions or recent news events
-        - Strategic engagement recommendations.`;
+        Using real-time search and social data, provide:
+        - **Sentiment Score**: A detailed breakdown of Positive, Neutral, and Negative mentions.
+        - **Trending Topics**: The top 3 recurring themes people are discussing.
+        - **Influential Voices**: Who is talking about this brand/topic?
+        - **Strategic Recommendations**: How to join the conversation effectively.`;
       } else if (activeTool === 'lead-magnet') {
-        prompt = `Perform professional internet research to generate 5 high-converting lead magnet ideas for: "${input1}". 
+        prompt = `As a Growth Marketer, generate 5 high-converting lead magnet ideas for: "${input1}". 
         Target Audience: ${input2 || 'General'}.
         Using real-time search data, provide:
-        - 5 Unique Lead Magnet concepts (e.g., Checklists, Webinars, Tools)
-        - Landing Page Hook & Value Proposition for each
-        - Mobile-First Delivery: How to ensure the lead magnet is easily consumable on mobile.`;
+        - 5 Unique Concepts (e.g., Interactive Tools, Proprietary Data Reports, Mini-Courses).
+        - **The "Big Promise"**: A compelling headline for each.
+        - **Delivery Strategy**: How to deliver the value instantly on mobile.
+        - **Nurture Path**: What happens immediately after they sign up?`;
       } else if (activeTool === 'email-sequence') {
-        prompt = `Plan a professional 5-step email nurture sequence for: "${input1}". 
+        prompt = `As an Email Marketing Strategist, plan a professional 5-step email nurture sequence for: "${input1}". 
         Goal: ${input2 || 'Conversion/Onboarding'}.
-        Using real-time data on email automation best practices, provide:
-        - Subject lines & Core message for each of the 5 emails
-        - Timing & Trigger recommendations
-        - Mobile Optimization: Ensuring every email is perfectly readable on mobile devices.`;
+        Using real-time data on automation best practices, provide:
+        - **Email 1**: The Welcome & Value Delivery.
+        - **Email 2**: The Problem/Solution Deep-Dive.
+        - **Email 3**: Social Proof & Case Studies.
+        - **Email 4**: The Logic & Objection Handling.
+        - **Email 5**: The Final Call to Action.
+        Include subject lines and core messaging for each.`;
       } else if (activeTool === 'landing-page') {
-        prompt = `Generate a professional structure and high-converting copy for a landing page for: "${input1}". 
+        prompt = `As a Conversion-Focused Web Designer, generate a professional structure and copy for a landing page for: "${input1}". 
         Primary Goal: ${input2 || 'Lead Generation/Sales'}.
-        Using real-time internet search and competitive benchmarking, provide:
-        - Headline, Sub-headline, and Hero Section copy
-        - Benefit-driven features & Social Proof sections
-        - Mobile Responsiveness Plan: Specific layout advice for mobile-first users
-        - Competitive Analysis: How this LP outperforms top competitors in the niche.`;
+        Using real-time search and competitive benchmarking, provide:
+        - **The Hero Section**: Headline, sub-headline, and primary CTA.
+        - **The "Problem/Solution" Framework**: Compelling copy that addresses user pain points.
+        - **Social Proof Strategy**: Where and how to place testimonials or logos.
+        - **Mobile-First Layout**: A detailed wireframe description for mobile users.`;
       } else if (activeTool === 'campaign-brief') {
-        prompt = `Create a professional, comprehensive campaign brief for: "${input1}". 
+        prompt = `As a Senior Marketing Manager, create a professional campaign brief for: "${input1}". 
         Goal: ${input2 || 'Growth/Launch'}.
-        Using real-time internet search and professional standards, include:
-        - Campaign Objectives & Target Audience
-        - Messaging Pillars & Creative Direction
-        - Competitive Benchmarking: Analysis of similar successful campaigns
-        - Channel Strategy & Success Metrics.`;
+        Using real-time search and professional standards, include:
+        - **Executive Summary**: The "Why" behind the campaign.
+        - **Target Audience Personas**: Detailed demographics and psychographics.
+        - **Creative Pillars**: The main themes and visual direction.
+        - **Channel Mix & Budget Allocation**: Where to spend for maximum impact.
+        - **Success Metrics**: Specific KPIs and tracking plan.`;
       } else if (activeTool === 'social-reply') {
-        prompt = `Draft professional and engaging replies to this social media comment: "${input1}". 
+        prompt = `As a Community Manager, draft professional and engaging replies to this social media comment: "${input1}". 
         Brand Tone: ${input2 || 'Friendly & Helpful'}.
-        Using real-time data on social media engagement trends, provide:
-        - 3 Variations (Helpful, Witty, Brand-aligned)
-        - Strategy for driving further engagement or conversion from the comment.`;
+        Using real-time data on engagement trends, provide:
+        - 3 Variations: Helpful, Witty, and Conversion-oriented.
+        - **Engagement Strategy**: How to turn this single comment into a thread or a recurring interaction.`;
       } else if (activeTool === 'content-calendar') {
-        prompt = `Generate a professional 7-day strategic social media content calendar for: "${input1}". 
+        prompt = `As a Content Strategist, generate a professional 7-day strategic social media content calendar for: "${input1}". 
         Platforms: ${input2 || 'Instagram & LinkedIn'}.
-        Using real-time internet search for trending topics in this niche, provide:
-        - Day-by-day post topics, formats, and estimated best times to post
-        - Mobile-First Content: Suggestions for vertical video, carousels, and mobile-friendly captions
-        - Engagement prompts & Hashtag strategy for each day.`;
+        Using real-time search for trending topics, provide:
+        - **Day 1-7**: Specific post topics, formats (Video, Carousel, Text), and optimized posting times.
+        - **Caption Outlines**: Key hooks and CTAs for each post.
+        - **Hashtag/Keyword Strategy**: Tailored for each day's content.`;
       } else if (activeTool === 'ad-budget') {
-        prompt = `Perform a professional ad budget optimization for a total spend of ₹${input1}. 
+        prompt = `As a Media Buyer, perform a professional ad budget optimization for a total spend of ₹${input1}. 
         Campaign Type: ${input2 || 'Digital Marketing'}.
-        Using real-time data on current ad platform costs (CPM/CPC), provide:
-        - Recommended allocation across channels (Meta, Google, TikTok, etc.)
-        - Estimated Reach, Impressions, and Conversions based on current benchmarks
-        - Scaling strategy & Competitive cost analysis.`;
+        Using real-time data on current CPM/CPC costs, provide:
+        - **Channel Allocation**: Recommended % split between Meta, Google, LinkedIn, etc.
+        - **Estimated Outcomes**: Realistic Reach, Clicks, and Conversions.
+        - **Scaling Plan**: How to increase budget if the campaign hits its targets.`;
       } else if (activeTool === 'lead-scorer') {
-        prompt = `Perform a professional AI lead qualification and scoring for: "${input1}". 
+        prompt = `As a Sales Operations Manager, perform a professional AI lead qualification and scoring for: "${input1}". 
         Industry/Context: ${input2 || 'B2B SaaS'}.
-        Using real-time data on lead quality benchmarks, provide:
-        - Lead Score (0-100) & Qualification Status (MQL, SQL, or Junk)
-        - Detailed analysis of strengths/weaknesses
-        - Recommended next action for the sales team.`;
+        Using real-time data on lead quality, provide:
+        - **Lead Score (0-100)**: Based on fit and intent.
+        - **Qualification Analysis**: Why this lead is (or isn't) ready for sales.
+        - **Next Steps**: Specific actions for SDRs or AEs.`;
       } else if (activeTool === 'sales-script') {
-        prompt = `Generate a professional, high-converting sales script for: "${input1}". 
+        prompt = `As a Sales Trainer, generate a professional, high-converting sales script for: "${input1}". 
         Script Type: ${input2 || 'Cold Call/Discovery'}.
-        Using real-time data on successful sales methodologies, provide:
-        - The Hook, Value Proposition, and Objection Handling
-        - The Close & Next Step
-        - Competitive Edge: How to position against common competitor objections.`;
+        Using real-time data on successful sales methodologies (e.g., SPIN, Challenger), provide:
+        - **The Opening**: A 15-second attention-grabbing hook.
+        - **Discovery Questions**: 5 deep questions to uncover pain points.
+        - **The Pitch**: A value-based solution presentation.
+        - **Objection Handling**: Responses to the top 3 common pushbacks.`;
       } else if (activeTool === 'crisis-comms') {
-        prompt = `Draft a professional crisis communication strategy and response for: "${input1}". 
+        prompt = `As a PR & Crisis Management Expert, draft a professional response strategy for: "${input1}". 
         Severity: ${input2 || 'Medium/High'}.
-        Using real-time data on brand reputation management, provide:
-        - Official Statement & Internal talking points
-        - Social media response templates & Channel strategy
-        - Monitoring plan to track sentiment recovery.`;
+        Using real-time data on brand reputation, provide:
+        - **The Official Statement**: A transparent, accountable, and action-oriented message.
+        - **FAQ for Stakeholders**: Addressing the most likely questions.
+        - **Social Media Monitoring Plan**: How to track and respond to the fallout.
+        - **Recovery Roadmap**: Steps to rebuild trust over the next 90 days.`;
       } else if (activeTool === 'press-release') {
-        prompt = `Write a professional, news-ready press release for: "${input1}". 
+        prompt = `As a PR Professional, write a news-ready press release for: "${input1}". 
         Announcement Type: ${input2 || 'Product Launch/Major News'}.
-        Using real-time PR standards and trending news formats, include:
-        - Catchy Headline, Dateline, and Lead Paragraph
-        - Executive Quote placeholder & Boilerplate
-        - Media Contact info & Distribution strategy.`;
+        Using real-time PR standards, include:
+        - **The Headline**: Compelling and newsworthy.
+        - **The Lead**: Addressing the 5 W's (Who, What, When, Where, Why).
+        - **Executive Quote**: A professional, visionary statement.
+        - **Boilerplate**: A concise "About Us" section.`;
       } else if (activeTool === 'link-bio') {
-        prompt = `Perform a professional optimization of a Link-in-bio page for: "${input1}". 
+        prompt = `As a Conversion Rate Optimization Specialist, perform a professional optimization of a Link-in-bio page for: "${input1}". 
         Primary Goal: ${input2 || 'Drive Conversions'}.
-        Using real-time data on high-performing mobile landing pages, suggest:
-        - 5 High-priority links with conversion-optimized titles
-        - Mobile-First Layout: Visual hierarchy and button placement for mobile users
-        - Tracking & Analytics strategy.`;
+        Using real-time data on mobile user behavior, suggest:
+        - **Link Hierarchy**: The top 5 links ordered by importance.
+        - **Visual Design**: Layout and button styling for maximum mobile CTR.
+        - **Analytics Plan**: How to track which links are actually driving revenue.`;
       } else if (activeTool === 'advocacy') {
-        prompt = `Generate a professional Employee Advocacy content set for: "${input1}". 
+        prompt = `As an Internal Communications Manager, generate a professional Employee Advocacy content set for: "${input1}". 
         Tone: ${input2 || 'Proud & Professional'}.
-        Using real-time data on employee advocacy trends, provide:
-        - 3 Variations of the post for employees to share on LinkedIn/Twitter
-        - Why this matters to the brand's reach
-        - Suggested visual assets for maximum engagement.`;
+        Using real-time data on social sharing, provide:
+        - 3 Post Variations for LinkedIn, Twitter, and Instagram.
+        - **Sharing Guidelines**: Tips for employees to personalize the message.
+        - **Impact Analysis**: How this campaign will boost the brand's organic reach.`;
       } else if (activeTool === 'content-curation') {
-        prompt = `Find and curate 5 high-quality content pieces (articles, videos, or news) for the topic: "${input1}". 
+        prompt = `As a Thought Leadership Strategist, find and curate 5 high-quality content pieces for: "${input1}". 
         Target Audience: ${input2 || 'General'}.
         For each piece, provide:
-        - A suggested social media share caption
-        - Why it's relevant to the audience
-        - A "Takeaway" or "Insight" to add value to the share.`;
+        - A unique, value-added caption for sharing.
+        - **The "Why it Matters"**: Connecting the content to the audience's interests.
+        - **Engagement Question**: A prompt to start a conversation.`;
       } else if (activeTool === 'social-audit') {
-        prompt = `Perform a professional deep-dive social media audit for the profile: "${input1}". 
-        Competitors/Platforms: ${input2 || 'Identify top 3 competitors automatically'}.
-        Using real-time internet search and social media data, provide a comprehensive report including:
-        1. **Profile Optimization**: Detailed analysis of Bio, Profile Picture, Cover Image, Links, and overall branding consistency.
-        2. **Content Performance**: Analysis of recent posts, engagement rates, content variety, and visual quality.
-        3. **Audience Engagement**: How the brand interacts with followers, response quality, and community sentiment.
-        4. **Competitive Benchmarking**: Analyze 2-3 top competitors (either provided or identified). Compare their content strategy, engagement tactics, and audience sentiment versus the target profile.
-        5. **Mobile Responsiveness Audit**: Evaluate the profile's mobile-first experience. Are the links easy to tap? Is the bio readable? Are the visuals optimized for vertical scrolling?
-        6. **Actionable Recommendations**: Provide a clear roadmap on how to out-perform the identified competitors and specific steps to enhance mobile responsiveness and user experience.`;
+        prompt = `As a Senior Social Media Auditor, perform a deep-dive audit for the profile: "${input1}". 
+        Competitors/Platforms: ${input2 || 'Analyze top 3 competitors'}.
+        Using real-time search and social data, provide:
+        - **Brand Consistency Score**: Analysis of visuals, bio, and messaging.
+        - **Engagement Audit**: Deep dive into what's working and what isn't.
+        - **Competitive Benchmarking**: How this profile compares to the leaders in the niche.
+        - **The "Growth Roadmap"**: 5 specific changes to double engagement in 30 days.`;
       } else if (activeTool === 'post-optimizer') {
-        prompt = `Determine the best times to post for: "${input1}". 
+        prompt = `As a Social Media Data Scientist, determine the optimal posting strategy for: "${input1}". 
         Platform: ${input2 || 'Instagram/LinkedIn'}.
-        Provide:
-        - 3 Recommended time slots (with reasoning)
-        - Frequency suggestions (daily/weekly)
-        - Content type recommendations for each slot.`;
+        Using real-time data on algorithm shifts, provide:
+        - **The "Golden Hours"**: 3 specific time slots with data-backed reasoning.
+        - **Content Format Mix**: The ideal ratio of Video vs. Static vs. Carousel.
+        - **Frequency Recommendation**: How often to post for maximum reach without burnout.`;
       } else if (activeTool === 'community-mgr') {
-        prompt = `Create a community management strategy for: "${input1}". 
+        prompt = `As a Senior Community Manager, create a professional engagement strategy for: "${input1}". 
         Goal: ${input2 || 'Engagement & Loyalty'}.
-        Include:
-        - Engagement rules & response times
-        - Strategies for handling negative feedback
-        - Ideas for community-building activities (polls, Q&As, etc.)
-        - Tracking metrics for community health.`;
+        Using real-time data on community building, include:
+        - **Engagement Rituals**: Daily/weekly activities to keep the community active.
+        - **Moderation Guidelines**: How to handle conflict and maintain a positive tone.
+        - **Loyalty Program Ideas**: How to reward the most active members.
+        - **Success Metrics**: How to measure community health beyond just "likes".`;
       } else if (activeTool === 'market-research') {
-        prompt = `Perform a professional deep-dive market research for the niche/topic: "${input1}". 
+        prompt = `As a Senior Market Research Analyst, perform a professional deep-dive research for: "${input1}". 
         Focus: ${input2 || 'Market Trends & Consumer Behavior'}.
-        Using real-time internet search and professional data, provide:
-        - Current Market Size, Growth Potential & CAGR
-        - 5 Major Trends shaping this niche in 2024-2026
-        - Detailed Consumer Personas & Pain Points
-        - 5 High-potential sub-niches or blue-ocean opportunities
-        - Regulatory or technological shifts to watch.`;
+        Using real-time search and industry reports, provide:
+        - **Market Size & Forecast**: Current data and 3-year growth projections.
+        - **Consumer Persona Deep-Dive**: Detailed psychographics and buying triggers.
+        - **Trend Analysis**: 5 macro and micro trends shaping the future of this niche.
+        - **SWOT Analysis**: A professional breakdown of Strengths, Weaknesses, Opportunities, and Threats.`;
       } else if (activeTool === 'content-repurpose') {
-        prompt = `Perform a professional content repurposing strategy for: "${input1}". 
+        prompt = `As a Content Operations Manager, perform a professional content repurposing strategy for: "${input1}". 
         Target Audience: ${input2 || 'General'}.
-        Using real-time data on high-performing content formats, repurpose into:
-        - 1 LinkedIn Thought Leadership Post
-        - 1 Instagram Carousel Outline (Mobile-optimized)
-        - 1 Twitter/X Thread
-        - 1 Short-form Video Script (TikTok/Reels)
-        - 1 Email Newsletter Segment.`;
+        Using real-time data on high-performing formats, repurpose the source into:
+        - 1 Long-form LinkedIn Post.
+        - 1 High-retention Instagram Carousel outline.
+        - 1 Viral-style Short Video script.
+        - 1 Twitter/X Thread.
+        - 1 Email Newsletter segment.`;
       } else if (activeTool === 'keyword-gap') {
-        prompt = `Perform a professional keyword gap analysis and search intent research for: "${input1}". 
+        prompt = `As an SEO Analyst, perform a professional keyword gap analysis for: "${input1}". 
         Competitor (optional): ${input2 || 'General Market'}.
         Using real-time search data, identify:
-        - 15 High-value keywords competitors are ranking for but you aren't
-        - 5 "Low-hanging fruit" keywords with high volume and low difficulty
-        - Search Intent analysis for each keyword (Informational, Transactional, etc.)
-        - Content strategy to capture these gaps
-        - Estimated traffic potential.`;
+        - **The "Missing 15"**: High-value keywords competitors rank for that you don't.
+        - **Search Intent Mapping**: Categorizing gaps by Informational, Navigational, and Transactional.
+        - **Difficulty vs. Opportunity Matrix**: Identifying the easiest wins.
+        - **Content Plan**: How to create pages that will outrank the competition for these terms.`;
       } else if (activeTool === 'report-gen') {
-        prompt = `Generate a professional, executive-level marketing report summary for: "${input1}". 
+        prompt = `As a Marketing Director, generate a professional executive-level report summary for: "${input1}". 
         Key Results/Metrics: ${input2 || 'General Performance'}.
-        Using real-time data visualization best practices, include:
-        - Executive Summary & Key Wins
-        - Metrics Breakdown (Reach, Engagement, Conversions) with industry benchmarking
-        - Next Month's Strategic Focus & Recommendations.`;
+        Using real-time data visualization standards, include:
+        - **Executive Summary**: The high-level "State of the Union".
+        - **Wins & Learnings**: What worked and what needs to change.
+        - **Strategic Pivot**: Recommended shifts for the next reporting period.
+        - **ROI Analysis**: Connecting marketing activity to business outcomes.`;
       } else if (activeTool === 'competitor-pricing') {
-        prompt = `Perform a professional internet research and competitive pricing analysis for: "${input1}". 
+        prompt = `As a Pricing Strategist, perform a professional competitive pricing analysis for: "${input1}". 
         Competitors: ${input2 || 'Identify top 3 automatically'}.
-        Using real-time search data, provide:
-        - Pricing models of top competitors (Subscription, One-time, Tiered, etc.)
-        - Estimated price points and value propositions
-        - Discounting and promotion strategies observed
-        - Strategic recommendations for your own pricing to remain competitive.`;
+        Using real-time market data, provide:
+        - **Pricing Matrix**: Comparing tiers, features, and price points.
+        - **Psychological Pricing Analysis**: How competitors are using anchoring or bundling.
+        - **Discounting Trends**: Analysis of seasonal or behavior-based offers.
+        - **Strategic Recommendation**: The optimal price point for maximum profit and market share.`;
       } else if (activeTool === 'ad-creative') {
-        prompt = `Generate professional ad creative concepts and visual ideas for: "${input1}". 
+        prompt = `As a Creative Director, generate professional ad creative concepts for: "${input1}". 
         Platform: ${input2 || 'Meta/Instagram'}.
-        Using real-time data on high-performing visual trends, provide:
-        - 3 Creative Concepts (e.g., User-Generated Content style, Minimalist, Bold Typography)
-        - Detailed visual descriptions for images/videos
-        - Color palette and font recommendations based on current design trends
-        - Mobile-First Design: Ensuring visuals are optimized for small screens and vertical formats.`;
+        Using real-time data on visual trends, provide:
+        - 3 Distinct Creative Directions (e.g., Minimalist, UGC-style, High-Production).
+        - **Visual Storyboard**: Detailed descriptions of imagery or video scenes.
+        - **Color & Typography Strategy**: Psychology-backed design choices.
+        - **Mobile-First Optimization**: Ensuring the creative stops the scroll on small screens.`;
       } else if (activeTool === 'site-audit') {
-        prompt = `As a Senior Technical SEO Auditor, perform a professional deep-dive research on the website: ${input1}
+        prompt = `As a Senior Technical SEO Auditor, perform a professional deep-dive research on: ${input1}
         Focus Area: ${input2 || "General SEO Health"}
         
-        Please provide a comprehensive Site Audit Report including:
-        1. **Technical SEO Issues**: Potential crawl errors, site speed bottlenecks, and mobile-friendliness issues.
-        2. **On-Page Optimization**: Analysis of meta tags, header structures, and keyword density.
-        3. **Content Quality**: Evaluation of E-E-A-T signals and content gaps.
-        4. **Actionable Fixes**: Priority list of technical and content improvements to boost rankings.`;
+        Using real-time technical SEO standards, provide:
+        - **Technical Health Check**: Crawlability, indexing, and site architecture analysis.
+        - **Performance Audit**: Core Web Vitals and speed bottlenecks.
+        - **On-Page Deep Dive**: Content quality, E-E-A-T signals, and keyword optimization.
+        - **Priority Action Plan**: A "Fix First" list ranked by impact on rankings.`;
       } else if (activeTool === 'rank-tracker') {
         prompt = `As an SEO Strategist, analyze the search engine ranking potential for:
         Website/URL: ${input1}
         Target Keywords: ${input2}
         
-        Please provide:
-        1. **Estimated Current Position**: Based on current SERP data for these keywords.
-        2. **Competitor Comparison**: Who is currently outranking this site and why.
-        3. **Ranking Difficulty**: A score from 1-100 and explanation.
-        4. **Optimization Strategy**: Specific steps to move to the top 3 positions.`;
+        Using real-time SERP data, provide:
+        - **Current Landscape**: Who owns the top 3 spots and why.
+        - **Ranking Difficulty Analysis**: A detailed breakdown of what it will take to rank.
+        - **Content Optimization Plan**: Specific changes to existing pages to boost position.
+        - **SERP Feature Strategy**: How to capture Snippets, People Also Ask, or Local Packs.`;
       } else if (activeTool === 'backlink-checker') {
-        prompt = `As a Link Building Expert, perform deep research on the backlink profile and authority of: ${input1}
+        prompt = `As a Link Building Expert, perform deep research on the backlink profile of: ${input1}
         Competitors to compare: ${input2}
         
-        Please provide:
-        1. **Authority Analysis**: Estimated Domain Authority and Trust Flow.
-        2. **Backlink Opportunities**: High-authority sites in this niche that are likely to link back.
-        3. **Competitor Backlink Gaps**: Where competitors have links that this site is missing.
-        4. **Link Building Strategy**: A 4-week plan to acquire high-quality, relevant backlinks.`;
+        Using real-time data, provide:
+        - **Domain Authority Audit**: Trust Flow and Citation Flow analysis.
+        - **Link Gap Analysis**: High-authority sites linking to competitors but not you.
+        - **Outreach Strategy**: 5 specific "Linkable Asset" ideas to attract high-quality backlinks.
+        - **Toxic Link Check**: Identifying potential risks to the site's authority.`;
       } else if (activeTool === 'robots-sitemap') {
         prompt = `As a Technical SEO Specialist, generate a professional Robots.txt and Sitemap structure for:
         Website URL: ${input1}
         Specific Requirements: ${input2}
         
-        Please provide:
-        1. **Optimized Robots.txt**: Including proper Allow/Disallow rules and sitemap reference.
-        2. **XML Sitemap Structure**: A logical hierarchy of pages to be indexed.
-        3. **Indexing Strategy**: Tips on how to ensure Google crawls the most important pages first.`;
+        Provide:
+        - **The Optimized Robots.txt**: Clean, secure, and search-engine friendly.
+        - **XML Sitemap Hierarchy**: Logical structure for efficient crawling.
+        - **Crawl Budget Strategy**: How to ensure Google spends time on your most important pages.`;
       } else if (activeTool === 'url-shortener') {
-        prompt = `As a Digital Marketer, suggest a professional URL shortening and tracking strategy for:
+        prompt = `As a Digital Marketing Operations Manager, suggest a professional URL strategy for:
         Long URL: ${input1}
-        Campaign Name/Context: ${input2}
+        Campaign Context: ${input2}
         
-        Please provide:
-        1. **Branded Short Link Suggestions**: Using custom domains or professional slugs.
-        2. **Tracking Parameter Setup (UTM)**: The exact UTM string to append for accurate analytics.
-        3. **QR Code Usage Strategy**: Where and how to use a QR code for this link to maximize offline-to-online conversion.`;
+        Provide:
+        - **Branded Link Suggestions**: Professional slugs that increase trust.
+        - **UTM Architecture**: The exact parameters needed for deep analytics tracking.
+        - **Redirection Strategy**: How to handle link expiration or updates.`;
       } else if (activeTool === 'qr-generator') {
-        prompt = `As a Creative Designer, provide a strategy for a custom, high-converting QR code for:
-        Target URL/Content: ${input1}
-        Brand Style/Context: ${input2}
+        prompt = `As a Creative Technologist, provide a strategy for a high-converting QR code for:
+        Target URL: ${input1}
+        Brand Context: ${input2}
         
-        Please provide:
-        1. **Design Concept**: How to style the QR code (colors, logo integration, frame) to match the brand.
-        2. **Call-to-Action (CTA)**: The perfect text to place around the QR code to encourage scans.
-        3. **Placement Strategy**: The best physical or digital locations to place this QR code for maximum engagement.`;
+        Provide:
+        - **Design Concept**: Visual styling that matches the brand identity.
+        - **CTA Strategy**: The exact text and placement to maximize scan rates.
+        - **Offline-to-Online Funnel**: What the user should see immediately after scanning.`;
       } else if (activeTool === 'contract-gen') {
-        prompt = `As a Professional Freelance Consultant, generate a comprehensive Service Agreement/Contract outline for:
+        prompt = `As a Professional Legal Consultant for Freelancers, generate a comprehensive contract outline for:
         Service/Project: ${input1}
         Client Details & Terms: ${input2}
         
-        Please provide a professional contract structure including:
-        1. **Scope of Work**: Detailed breakdown of deliverables.
-        2. **Payment Terms**: Milestone-based structure and late fee clauses.
-        3. **IP & Confidentiality**: Standard protection for both parties.
-        4. **Termination & Dispute Resolution**: Clear exit strategy and legal jurisdiction.`;
+        Provide a professional structure including:
+        - **Detailed Scope of Work**: Deliverables and milestones.
+        - **Payment & Late Fee Clauses**: Protecting your cash flow.
+        - **IP & Liability Protection**: Standard industry safeguards.
+        - **Termination Terms**: A clear and fair exit strategy.`;
       } else if (activeTool === 'time-estimate') {
-        prompt = `As a Project Manager, provide a professional time and cost estimate for:
+        prompt = `As a Senior Project Manager, provide a professional time and cost estimate for:
         Project/Task: ${input1}
         Complexity/Details: ${input2}
         
-        Please provide:
-        1. **Phase Breakdown**: Estimated hours for Research, Design, Development, and Testing.
-        2. **Total Estimated Hours**: A realistic range (Min-Max).
-        3. **Resource Requirements**: What tools or additional help might be needed.
-        4. **Risk Assessment**: Potential bottlenecks that could delay the project.`;
+        Provide:
+        - **Phase-by-Phase Breakdown**: Hours for Research, Design, Dev, and QA.
+        - **The "Realistic" Timeline**: A data-backed range with buffer for risks.
+        - **Resource Plan**: Tools and talent needed for successful execution.
+        - **Risk Mitigation**: Identifying and planning for potential bottlenecks.`;
       }
 
       if (activeTool === 'utm') {
@@ -530,7 +544,10 @@ export function Tools() {
         const response = await ai.models.generateContent({
           model: isDeepSearchTool ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview",
           contents: prompt,
-          config: isDeepSearchTool ? { tools: [{ googleSearch: {} }] } : undefined
+          config: {
+            systemInstruction,
+            ...(isDeepSearchTool ? { tools: [{ googleSearch: {} }] } : {})
+          }
         });
         const text = response.text || "No result generated.";
         
@@ -566,9 +583,10 @@ export function Tools() {
   const handleDownload = () => {
     if (!url) return;
     setDownloading(true);
+    // Simulate a professional fetching process
     setTimeout(() => {
       setDownloading(false);
-      alert("Download started! (Mock)");
+      setResult(`Successfully fetched media from: ${url}\n\nNote: In this preview environment, direct downloads are simulated. In a production environment, this would connect to a high-speed media proxy to bypass platform restrictions.`);
     }, 2000);
   };
 
