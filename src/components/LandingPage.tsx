@@ -1,8 +1,8 @@
 import { Button } from "./Button";
-import { Flame, Sparkles, TrendingUp, Zap, ShieldCheck } from "lucide-react";
-import { motion } from "motion/react";
+import { AlertCircle, Flame, Sparkles, TrendingUp, Zap, ShieldCheck } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
-export function LandingPage({ onLogin }: { onLogin: () => void }) {
+export function LandingPage({ onLogin, error }: { onLogin: () => void, error?: string | null }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-16 items-center justify-between px-6 md:px-12">
@@ -33,8 +33,24 @@ export function LandingPage({ onLogin }: { onLogin: () => void }) {
             <p className="text-xl text-muted-foreground">
               A private AI assistant designed specifically for your digital marketing campaigns, client management, and content automation.
             </p>
-            <div className="flex flex-col space-y-4 sm:flex-row sm:justify-center sm:space-x-4 sm:space-y-0">
-              <Button size="lg" onClick={onLogin}>Enter Assistant Portal</Button>
+            <div className="flex flex-col items-center space-y-6">
+              <div className="flex flex-col space-y-4 sm:flex-row sm:justify-center sm:space-x-4 sm:space-y-0">
+                <Button size="lg" onClick={onLogin}>Enter Assistant Portal</Button>
+              </div>
+
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="flex items-center space-x-2 p-4 rounded-lg bg-destructive/10 text-destructive text-sm font-medium border border-destructive/20 max-w-md mx-auto"
+                  >
+                    <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                    <span>{error}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         </section>

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 import { useEffect, useState } from "react";
 import { db, collection, query, orderBy, limit, onSnapshot, where, handleFirestoreError, OperationType, addDoc } from "@/lib/firebase";
-import { GoogleGenAI } from "@google/genai";
+import { AIService } from "@/lib/gemini";
 import ReactMarkdown from "react-markdown";
 
 export function Dashboard() {
@@ -108,22 +108,17 @@ export function Dashboard() {
     if (!user) return;
     setLoadingBriefing(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const taskSummary = recentTasks.length > 0 
         ? recentTasks.map(t => `${t.type}: ${t.title}`).join(", ")
         : "No recent tasks. Just starting the day.";
       
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `As a professional marketing assistant, provide a concise (3-4 bullet points) "Daily Briefing" for ${profile?.displayName || 'Diwakar'}. 
+      const text = await AIService.generateContent(`As a professional marketing assistant, provide a concise (3-4 bullet points) "Daily Briefing" for ${profile?.displayName || 'Diwakar'}. 
         Context: They have ${clientCount} clients. Recent activity: ${taskSummary}.
         Also, provide a separate "Marketing Tip of the Day" (one sentence).
         Format: 
         BRIEFING: [bullet points]
-        TIP: [one sentence tip]`,
-      });
+        TIP: [one sentence tip]`);
       
-      const text = response.text || "";
       const briefingPart = text.split("TIP:")[0].replace("BRIEFING:", "").trim();
       const tipPart = text.split("TIP:")[1]?.trim() || "Focus on consistency to build brand authority.";
       
@@ -196,47 +191,68 @@ export function Dashboard() {
 
       {/* AI Briefing & Quick Actions */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 border-primary/20 bg-gradient-to-br from-primary/5 to-background shadow-sm overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold flex items-center justify-between">
-              <div className="flex items-center">
-                <Sparkles className="mr-2 h-4 w-4 text-primary shrink-0" />
-                AI Daily Briefing
-              </div>
-              {tipOfDay && (
-                <div className="hidden md:flex items-center text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full animate-pulse">
-                  <Zap className="h-3 w-3 mr-1" />
-                  Tip: {tipOfDay}
-                </div>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingBriefing ? (
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground py-4">
-                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                <span>Analyzing your recent activity...</span>
-              </div>
-            ) : briefing ? (
-              <div className="space-y-4">
-                <div className="prose prose-sm max-w-none dark:prose-invert text-muted-foreground leading-relaxed max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                  <ReactMarkdown>{briefing}</ReactMarkdown>
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background shadow-sm overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold flex items-center justify-between">
+                <div className="flex items-center">
+                  <Sparkles className="mr-2 h-4 w-4 text-primary shrink-0" />
+                  AI Daily Briefing
                 </div>
                 {tipOfDay && (
-                  <div className="md:hidden p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                    <p className="text-[10px] font-bold text-amber-800 flex items-center mb-1">
-                      <Zap className="h-3 w-3 mr-1" />
-                      TIP OF THE DAY
-                    </p>
-                    <p className="text-xs text-amber-700 italic">{tipOfDay}</p>
+                  <div className="hidden md:flex items-center text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full animate-pulse">
+                    <Zap className="h-3 w-3 mr-1" />
+                    Tip: {tipOfDay}
                   </div>
                 )}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground italic py-4">No briefing available yet. Start by generating some content!</p>
-            )}
-          </CardContent>
-        </Card>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingBriefing ? (
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground py-4">
+                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                  <span>Analyzing your recent activity...</span>
+                </div>
+              ) : briefing ? (
+                <div className="space-y-4">
+                  <div className="prose prose-sm max-w-none dark:prose-invert text-muted-foreground leading-relaxed max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                    <ReactMarkdown>{briefing}</ReactMarkdown>
+                  </div>
+                  {tipOfDay && (
+                    <div className="md:hidden p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                      <p className="text-[10px] font-bold text-amber-800 flex items-center mb-1">
+                        <Zap className="h-3 w-3 mr-1" />
+                        TIP OF THE DAY
+                      </p>
+                      <p className="text-xs text-amber-700 italic">{tipOfDay}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic py-4">No briefing available yet. Start by generating some content!</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* AI Quick Tools */}
+          <div className="hidden md:grid grid-cols-4 gap-4">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <Link key={action.name} to={action.href}>
+                  <Card className="hover:border-primary/50 transition-all group border-primary/10 bg-card/50 hover:bg-card">
+                    <CardContent className="p-4 flex flex-col items-center text-center space-y-2">
+                      <div className={cn("p-2 rounded-lg text-white", action.color)}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider">{action.name}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 md:gap-4">
           <Card 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AIService } from "@/lib/gemini";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Button } from "./Button";
 import { Input } from "./Input";
@@ -60,7 +61,6 @@ import {
   ArrowLeft,
   Printer
 } from "lucide-react";
-import { GoogleGenAI } from "@google/genai";
 import { useAuth } from "@/lib/AuthContext";
 import { db, collection, addDoc, query, orderBy, onSnapshot, handleFirestoreError, OperationType } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
@@ -119,13 +119,6 @@ export function Tools() {
     setError(null);
     
     try {
-      if (!process.env.GEMINI_API_KEY) {
-        setError("API Key is missing. If you are on Vercel, please add GEMINI_API_KEY to your environment variables. If you are in the preview, please ensure the key is set in the settings.");
-        setLoading(false);
-        return;
-      }
-
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       let prompt = "";
 
       const systemInstruction = `You are a Senior Digital Marketing Strategist and Market Research Expert with 15+ years of experience in high-growth startups and Fortune 500 companies. 
@@ -547,15 +540,11 @@ export function Tools() {
           'url-shortener', 'qr-generator', 'contract-gen', 'time-estimate'
         ].includes(activeTool);
 
-        const response = await ai.models.generateContent({
+        const text = await AIService.generateContent(prompt, {
           model: isDeepSearchTool ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview",
-          contents: prompt,
-          config: {
-            systemInstruction,
-          },
-          ...(isDeepSearchTool ? { tools: [{ googleSearch: {} }] } : {})
+          systemInstruction,
+          useSearch: isDeepSearchTool
         });
-        const text = response.text || "No result generated.";
         
         if (activeTool === 'youtube-seo' && text.toLowerCase().includes("could not find") && text.toLowerCase().includes("video")) {
           setError("We couldn't fetch the content for this video. Please ensure the URL is correct and the video is public.");

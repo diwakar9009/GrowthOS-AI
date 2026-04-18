@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { GoogleGenAI } from "@google/genai";
+import { AIService } from "@/lib/gemini";
 import { Button } from "./Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Input, Textarea } from "./Input";
@@ -39,10 +39,7 @@ export function AICaptionGenerator() {
     if (!topic || !user) return;
     setLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `As an expert Social Media Manager, generate high-engagement content for the following:
+      const text = await AIService.generateContent(`As an expert Social Media Manager, generate high-engagement content for the following:
         Topic: ${topic}
         Client/Project: ${client || "General"}
         Niche: ${niche}
@@ -55,10 +52,8 @@ export function AICaptionGenerator() {
         2. 15-20 Relevant Hashtags (Categorized: Broad, Niche, Community)
         3. 3 Content Hook Ideas for Reels/Shorts
         
-        Format the output clearly using Markdown headers.`,
-      });
+        Format the output clearly using Markdown headers.`);
 
-      const text = response.text || "No response from AI.";
       setResult(text);
 
       // Save to Firestore history
@@ -76,9 +71,9 @@ export function AICaptionGenerator() {
         handleFirestoreError(e, OperationType.CREATE, `users/${user.uid}/tasks`);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating caption:", error);
-      setResult("Failed to generate caption. Please try again.");
+      setResult(error.message || "Failed to generate caption. Please try again.");
     } finally {
       setLoading(false);
     }

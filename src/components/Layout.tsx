@@ -26,6 +26,7 @@ const navGroups = [
       { name: "Trends", href: "/trends", icon: TrendingUp },
       { name: "Content SEO", href: "/content-seo", icon: Search },
       { name: "SEO Gen", href: "/seo-generator", icon: Sparkles },
+      { name: "Tools", href: "/tools", icon: Wrench },
     ]
   },
   {
@@ -36,7 +37,6 @@ const navGroups = [
       { name: "Invoices", href: "/invoices", icon: FileText },
       { name: "Team", href: "/team", icon: Users },
       { name: "Brand Kit", href: "/brand-kit", icon: Palette },
-      { name: "Tools", href: "/tools", icon: Wrench },
       { name: "Profile", href: "/profile", icon: User },
     ]
   }

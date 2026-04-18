@@ -19,6 +19,7 @@ const navGroups = [
       { name: "Trends", href: "/trends", icon: TrendingUp },
       { name: "Content SEO", href: "/content-seo", icon: Search },
       { name: "SEO Gen", href: "/seo-generator", icon: Sparkles },
+      { name: "Tools", href: "/tools", icon: Wrench },
     ]
   },
   {
@@ -30,7 +31,6 @@ const navGroups = [
       { name: "Invoices", href: "/invoices", icon: FileText },
       { name: "Team", href: "/team", icon: Users },
       { name: "Brand Kit", href: "/brand-kit", icon: Palette },
-      { name: "Tools", href: "/tools", icon: Wrench },
       { name: "Profile", href: "/profile", icon: User },
     ]
   }
@@ -81,7 +81,7 @@ export function Navigation() {
           </div>
           <span className="text-xl font-bold tracking-tight">GrowthOS AI</span>
         </div>
-        <nav className="flex flex-1 flex-col space-y-6 overflow-y-auto no-scrollbar">
+        <nav className="flex flex-1 flex-col space-y-6 overflow-y-auto pr-2 custom-scrollbar">
           {navGroups.map((group) => (
             <div key={group.label} className="space-y-2">
               <h3 className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-3">

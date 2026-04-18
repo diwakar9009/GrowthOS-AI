@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { GoogleGenAI } from "@google/genai";
+import { AIService } from "@/lib/gemini";
 import { Button } from "./Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Input, Textarea } from "./Input";
@@ -26,10 +26,7 @@ export function SEOGenerator() {
     if (!topic || !user) return;
     setLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
-        contents: `As an expert Digital Marketing Executive and SEO Specialist, perform a professional deep-dive internet research and generate a highly targeted, trending, and SEO-optimized content pack for the following:
+      const text = await AIService.generateContent(`As an expert Digital Marketing Executive and SEO Specialist, perform a professional deep-dive internet research and generate a highly targeted, trending, and SEO-optimized content pack for the following:
         
         Topic/Keywords: ${topic}
         Niche/Industry: ${niche || "General Marketing"}
@@ -47,13 +44,11 @@ export function SEOGenerator() {
            - Secondary/LSI Keywords
            - Long-tail Keywords
         4. **15-20 Trending Hashtags**: Categorized by reach specifically for ${platform} based on current viral trends.
-        5. **Content Strategy Tip**: One actionable tip on how to structure the content for this specific niche and audience to improve ranking NOW.`,
-        config: {
-          tools: [{ googleSearch: {} }]
-        }
-      });
+        5. **Content Strategy Tip**: One actionable tip on how to structure the content for this specific niche and audience to improve ranking NOW.`, {
+          model: "gemini-3.1-pro-preview",
+          useSearch: true
+        });
 
-      const text = response.text || "No response from AI.";
       setResult(text);
 
       // Save to Firestore history
@@ -69,9 +64,9 @@ export function SEOGenerator() {
         handleFirestoreError(e, OperationType.CREATE, `users/${user.uid}/tasks`);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating SEO content:", error);
-      setResult("Failed to generate SEO content. Please try again.");
+      setResult(error.message || "Failed to generate SEO content. Please try again.");
     } finally {
       setLoading(false);
     }

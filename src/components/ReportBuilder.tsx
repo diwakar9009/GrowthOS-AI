@@ -29,7 +29,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/lib/AuthContext";
 import { db, collection, query, orderBy, onSnapshot, addDoc, handleFirestoreError, OperationType } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
-import { GoogleGenAI } from "@google/genai";
+import { AIService } from "@/lib/gemini";
 import ReactMarkdown from "react-markdown";
 
 interface ReportSection {
@@ -127,7 +127,6 @@ export function ReportBuilder() {
     if (!user || !activeReport) return;
     setGeneratingAI(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const prompt = `As a senior digital marketing analyst, write a professional executive summary and performance analysis for a marketing report.
       Client: ${activeReport.clientName}
       Report Title: ${activeReport.title}
@@ -140,12 +139,7 @@ export function ReportBuilder() {
       
       Format with professional Markdown.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt
-      });
-
-      const analysis = response.text || "Analysis generation failed.";
+      const analysis = await AIService.generateContent(prompt);
       
       // Update the report sections
       const updatedSections = [...activeReport.sections];

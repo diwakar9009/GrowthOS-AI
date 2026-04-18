@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./components/Dashboard";
 import { AICaptionGenerator } from "./components/AICaptionGenerator";
@@ -30,12 +30,21 @@ import { Loader2 } from "lucide-react";
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleLogin = async () => {
+    setLoginError(null);
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
+      if (error.code === "auth/unauthorized-domain") {
+        setLoginError("This domain is not authorized in Firebase. Please add this URL to 'Authorized Domains' in your Firebase Console.");
+      } else if (error.code === "auth/popup-blocked") {
+        setLoginError("Login popup was blocked by your browser.");
+      } else {
+        setLoginError(error.message || "Login failed. Please try again.");
+      }
     }
   };
 
@@ -48,7 +57,7 @@ function AppContent() {
   }
 
   if (!user) {
-    return <LandingPage onLogin={handleLogin} />;
+    return <LandingPage onLogin={handleLogin} error={loginError} />;
   }
 
   return (

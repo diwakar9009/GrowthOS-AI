@@ -36,7 +36,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "./Button";
 import { cn } from "@/lib/utils";
-import { GoogleGenAI } from "@google/genai";
+import { AIService } from "@/lib/gemini";
 
 const blogData = [
   { name: "Post 1", views: 1200, avgTime: 145, bounce: 42 },
@@ -72,10 +72,7 @@ export function ContentOptimizer() {
     if (!contentToOptimize) return;
     setIsOptimizing(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
-        contents: `Perform a professional deep-dive research into current ${activePlatform} algorithms and SEO trends. 
+      const text = await AIService.generateContent(`Perform a professional deep-dive research into current ${activePlatform} algorithms and SEO trends. 
         Analyze the following content and provide expert optimization suggestions based on REAL-TIME platform data. 
         
         Format as JSON with: 
@@ -85,14 +82,12 @@ export function ContentOptimizer() {
         - suggestions (array of objects with title and description)
         - keywords (array of strings)
         
-        Content: ${contentToOptimize}`,
-        config: {
-          tools: [{ googleSearch: {} }],
-          responseMimeType: "application/json"
-        }
-      });
+        Content: ${contentToOptimize}`, {
+          model: "gemini-3.1-pro-preview",
+          useSearch: true
+        });
       
-      const result = JSON.parse(response.text || "{}");
+      const result = JSON.parse(text || "{}");
       setOptimizationResult(result);
     } catch (error) {
       console.error("Optimization failed:", error);

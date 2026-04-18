@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { GoogleGenAI } from "@google/genai";
+import { AIService } from "@/lib/gemini";
 import { Button } from "./Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Input } from "./Input";
@@ -41,10 +41,7 @@ export function Trends() {
     if (!user) return;
     setLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
-        contents: `Perform a professional deep-dive internet research and generate 5 viral content ideas for a ${niche || "general"} creator based on the trending topic: "${trend}".
+      const text = await AIService.generateContent(`Perform a professional deep-dive internet research and generate 5 viral content ideas for a ${niche || "general"} creator based on the trending topic: "${trend}".
         Target Audience: ${audience}
         Client/Project Context: ${client || "General"}
         Brand Voice/Tone: ${clientVoice || "Professional & Engaging"}
@@ -55,13 +52,11 @@ export function Trends() {
         - Brief description
         - Why it's trending (use specific real-time data and search results)
         - Call to action (CTA)
-        - Strategic insight on why this trend is relevant NOW.`,
-        config: {
-          tools: [{ googleSearch: {} }]
-        }
-      });
+        - Strategic insight on why this trend is relevant NOW.`, {
+          model: "gemini-3.1-pro-preview",
+          useSearch: true
+        });
 
-      const text = response.text || "No response from AI.";
       setIdeas(text);
 
       // Save to Firestore history
@@ -79,9 +74,9 @@ export function Trends() {
         handleFirestoreError(e, OperationType.CREATE, `users/${user.uid}/tasks`);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating ideas:", error);
-      setIdeas("Failed to generate ideas. Please try again.");
+      setIdeas(error.message || "Failed to generate ideas. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -91,19 +86,14 @@ export function Trends() {
     if (!keywordTopic || !user) return;
     setIsGeneratingKeywords(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
-        contents: `As an SEO expert, perform professional search research and generate a list of 10-15 trending and high-volume keywords for the topic: "${keywordTopic}" in the ${niche || "general"} niche. 
+      const text = await AIService.generateContent(`As an SEO expert, perform professional search research and generate a list of 10-15 trending and high-volume keywords for the topic: "${keywordTopic}" in the ${niche || "general"} niche. 
         Target Audience: ${audience}
-        Using real-time search data, format as JSON with an array of objects: { keyword: string, volume: string, difficulty: 'low' | 'medium' | 'high', trend: 'up' | 'down' | 'stable' }`,
-        config: {
-          tools: [{ googleSearch: {} }],
-          responseMimeType: "application/json"
-        }
-      });
+        Using real-time search data, format as JSON with an array of objects: { keyword: string, volume: string, difficulty: 'low' | 'medium' | 'high', trend: 'up' | 'down' | 'stable' }`, {
+          model: "gemini-3.1-pro-preview",
+          useSearch: true
+        });
       
-      const result = JSON.parse(response.text || "[]");
+      const result = JSON.parse(text || "[]");
       setKeywords(result);
     } catch (error) {
       console.error("Keyword generation failed:", error);
