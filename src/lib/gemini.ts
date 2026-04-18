@@ -36,7 +36,24 @@ export class AIService {
     return this.instance;
   }
 
-  private static lastRequestTime = 0;
+  private static readonly COOLOFF_KEY = "growthos_ai_cooloff";
+  private static readonly LAST_REQ_KEY = "growthos_ai_last_req";
+
+  private static getCooloffUntil(): number {
+    return Number(localStorage.getItem(this.COOLOFF_KEY) || "0");
+  }
+
+  private static setCooloffUntil(time: number) {
+    localStorage.setItem(this.COOLOFF_KEY, time.toString());
+  }
+
+  private static getLastRequestTime(): number {
+    return Number(localStorage.getItem(this.LAST_REQ_KEY) || "0");
+  }
+
+  private static setLastRequestTime(time: number) {
+    localStorage.setItem(this.LAST_REQ_KEY, time.toString());
+  }
   private static executionQueue: Promise<any> = Promise.resolve();
 
   static async generateContent(prompt: string, config: AIGenerationConfig = {}) {
@@ -49,15 +66,26 @@ export class AIService {
       } = config;
 
       const now = Date.now();
-      const interval = model.includes("pro") ? 32000 : 4000;
-      const timeSinceLast = now - this.lastRequestTime;
+      const cooloff = this.getCooloffUntil();
+      
+      // Check for active cool-off
+      if (now < cooloff) {
+        const remaining = Math.ceil((cooloff - now) / 1000);
+        throw new Error(`AI Limit Protect: Resuming in ${remaining}s. To save your free quota, I've paused AI across all your tabs temporarily.`);
+      }
+
+      // Pro has 2 RPM (30s avg), Flash has 15 RPM (4s avg)
+      // We use slightly higher buffers to be safe
+      const interval = model.includes("pro") ? 45000 : 6000; 
+      const lastReq = this.getLastRequestTime();
+      const timeSinceLast = now - lastReq;
       
       if (timeSinceLast < interval) {
         const waitTime = interval - timeSinceLast;
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
       
-      this.lastRequestTime = Date.now();
+      this.setLastRequestTime(Date.now());
 
       try {
         const client = this.getClient();
@@ -82,14 +110,15 @@ export class AIService {
         }
         
         // Distinguish between RPM (Requests Per Minute) and RPD (Requests Per Day)
-        if (errorMessage.includes("quota") || errorMessage.includes("429")) {
-          if (errorMessage.includes("exhausted") || errorMessage.includes("limit reach")) {
-             throw new Error("Daily Limit Reached: You've reached the free tier daily limit (1,500 requests). AI will reset tomorrow. Try using a different API Key if needed.");
+        if (errorMessage.includes("quota") || errorMessage.includes("429") || errorMessage.includes("limit")) {
+          // If we hit a 429, trigger a 70-second cool-off for ALL TABS
+          this.setCooloffUntil(Date.now() + 70000);
+
+          if (errorMessage.includes("exhausted") || errorMessage.includes("limit reach") || errorMessage.includes("daily")) {
+             throw new Error("Daily Limit Reached: You've reached the daily capacity for your Gemini Free key. It will reset naturally in 24 hours.");
           }
           throw new Error(
-            "Rate Limit Exceeded: You're calling the AI too fast. " +
-            "Please wait exactly 60 seconds without clicking anything and then try again. " +
-            "I've added a serial queue to help prevent this!"
+            "AI Rate Limit: The free tier is busy. I've activated a 'Safety Pause' across your app. Please wait 70s for it to expire."
           );
         }
 

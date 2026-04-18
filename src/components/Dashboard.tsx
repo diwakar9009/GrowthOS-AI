@@ -109,13 +109,13 @@ export function Dashboard() {
   const generateBriefing = async () => {
     if (!user || briefingInProgress.current) return;
     
-    // Simple client-side cache to prevent re-generation within a session
+    // Persistent cross-tab cache to prevent re-generation within a session
     const cacheKey = `briefing_${user.uid}`;
-    const cached = sessionStorage.getItem(cacheKey);
+    const cached = localStorage.getItem(cacheKey);
     if (cached) {
       const { briefing: b, tip: t, ts } = JSON.parse(cached);
-      // Cache for 30 minutes
-      if (Date.now() - ts < 30 * 60 * 1000) {
+      // Cache for 8 hours (a full working day)
+      if (Date.now() - ts < 8 * 60 * 60 * 1000) {
         setBriefing(b);
         setTipOfDay(t);
         return;
@@ -143,17 +143,17 @@ export function Dashboard() {
       setBriefing(briefingPart);
       setTipOfDay(tipPart);
 
-      // Store in session cache
-      sessionStorage.setItem(cacheKey, JSON.stringify({ 
+      // Store in persistent cache
+      localStorage.setItem(cacheKey, JSON.stringify({ 
         briefing: briefingPart, 
         tip: tipPart, 
         ts: Date.now() 
       }));
     } catch (e: any) {
-      console.error(e);
-      if (e.message?.includes("quota")) {
-        setBriefingError(true);
-      }
+      console.error("Dashboard Briefing Error:", e);
+      setBriefingError(true);
+      // Ensure we stop trying to generate
+      setLoadingBriefing(false);
     } finally {
       setLoadingBriefing(false);
       briefingInProgress.current = false;
