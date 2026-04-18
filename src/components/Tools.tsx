@@ -842,12 +842,21 @@ export function Tools() {
                   )}
                 >
                   <div className={cn(
-                    "p-2 sm:p-2.5 rounded-xl transition-all",
+                    "p-2 sm:p-2.5 rounded-xl transition-all relative",
                     activeTool === tool.id 
                       ? "bg-primary text-primary-foreground shadow-md" 
                       : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
                   )}>
                     <tool.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                    {[
+                      'competitor', 'influencer', 'trends', 'market-research', 
+                      'keyword-gap', 'social-listening', 'social-audit', 
+                      'competitor-pricing', 'site-audit', 'rank-tracker'
+                    ].includes(tool.id) && (
+                      <div className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-0.5 shadow-sm border border-white">
+                        <Globe className="h-2 w-2" />
+                      </div>
+                    )}
                   </div>
                   <span className={cn(
                     "text-[10px] sm:text-[11px] font-bold leading-tight line-clamp-2",
@@ -993,7 +1002,19 @@ export function Tools() {
                     })()}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-lg sm:text-xl">{tools.find(t => t.id === activeTool)?.name} Assistant</span>
+                    <span className="text-lg sm:text-xl flex items-center gap-2">
+                      {tools.find(t => t.id === activeTool)?.name} Assistant
+                      {[
+                        'competitor', 'influencer', 'trends', 'market-research', 
+                        'keyword-gap', 'social-listening', 'social-audit', 
+                        'competitor-pricing', 'site-audit', 'rank-tracker'
+                      ].includes(activeTool) && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-md font-black uppercase flex items-center gap-1">
+                          <Globe className="h-2 w-2" />
+                          Live Research
+                        </span>
+                      )}
+                    </span>
                     <span className="text-[10px] font-bold text-primary uppercase tracking-widest lg:hidden">
                       {tools.find(t => t.id === activeTool)?.category}
                     </span>

@@ -130,7 +130,7 @@ export function Dashboard() {
         ? recentTasks.map(t => `${t.type}: ${t.title}`).join(", ")
         : "No recent tasks. Just starting the day.";
       
-      const text = await AIService.generateContent(`As a professional marketing assistant, provide a concise (3-4 bullet points) "Daily Briefing" for ${profile?.displayName || 'Diwakar'}. 
+      const text = await AIService.generateContent(`As a professional marketing assistant, provide a concise (3-4 bullet points) "Daily Briefing" for ${profile?.displayName || 'the User'}. 
         Context: They have ${clientCount} clients. Recent activity: ${taskSummary}.
         Also, provide a separate "Marketing Tip of the Day" (one sentence).
         Format: 
@@ -215,7 +215,7 @@ export function Dashboard() {
       {/* Welcome Header */}
       <div className="flex flex-col space-y-2">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Personal Assistant Dashboard</h1>
-        <p className="text-sm md:text-base text-muted-foreground">Welcome back, {profile?.displayName?.split(' ')[0] || 'Diwakar'}. Ready to manage your campaigns?</p>
+        <p className="text-sm md:text-base text-muted-foreground">Welcome back, {profile?.displayName?.split(' ')[0] || 'User'}. Ready to manage your campaigns?</p>
       </div>
 
       {/* AI Briefing & Quick Actions */}
