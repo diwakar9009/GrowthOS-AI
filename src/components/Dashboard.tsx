@@ -206,7 +206,10 @@ export function Dashboard() {
 
   useEffect(() => {
     if (user && isAuthReady && !briefing && !loadingBriefing && !briefingInProgress.current && !briefingError) {
-      generateBriefing();
+      const timer = setTimeout(() => {
+        generateBriefing();
+      }, 2000);
+      return () => clearTimeout(timer);
     }
   }, [user, isAuthReady, briefing, loadingBriefing, briefingError, clientCount, recentTasks.length]);
 

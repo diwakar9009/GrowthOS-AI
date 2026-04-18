@@ -21,11 +21,14 @@ export class AIService {
     const apiKey = process.env.GEMINI_API_KEY;
     
     if (!apiKey || apiKey === "undefined") {
+      console.error("GEMINI_API_KEY is missing or undefined in current environment.");
       throw new Error(
         "AI Configuration Error: GEMINI_API_KEY is missing. " +
         "If you are on Vercel or GitHub, please ensure the environment variable is added to your dashboard and you have redeployed the app."
       );
     }
+
+    console.log(`AI Service initialized with key: ${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`);
 
     if (!this.instance) {
       this.instance = new GoogleGenAI({ apiKey });
@@ -34,27 +37,27 @@ export class AIService {
   }
 
   private static lastRequestTime = 0;
-  private static MIN_REQUEST_INTERVAL = 4000;
   private static executionQueue: Promise<any> = Promise.resolve();
 
   static async generateContent(prompt: string, config: AIGenerationConfig = {}) {
     // Chain onto the current queue to ensure serial execution
     return this.executionQueue = this.executionQueue.then(async () => {
-      const now = Date.now();
-      const timeSinceLast = now - this.lastRequestTime;
-      
-      if (timeSinceLast < this.MIN_REQUEST_INTERVAL) {
-        const waitTime = this.MIN_REQUEST_INTERVAL - timeSinceLast;
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-      }
-      
-      this.lastRequestTime = Date.now();
-      
       const { 
         model = "gemini-3-flash-preview", 
         systemInstruction, 
         useSearch = false 
       } = config;
+
+      const now = Date.now();
+      const interval = model.includes("pro") ? 32000 : 4000;
+      const timeSinceLast = now - this.lastRequestTime;
+      
+      if (timeSinceLast < interval) {
+        const waitTime = interval - timeSinceLast;
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+      
+      this.lastRequestTime = Date.now();
 
       try {
         const client = this.getClient();
@@ -72,18 +75,29 @@ export class AIService {
       } catch (error: any) {
         console.error("AI Generation failed:", error);
         
-        if (error.message?.includes("API_KEY_INVALID")) {
-          throw new Error("Invalid API Key. Please check your GEMINI_API_KEY setting.");
+        const errorMessage = error.message || "";
+        
+        if (errorMessage.includes("API_KEY_INVALID")) {
+          throw new Error("Invalid API Key. Please check your GEMINI_API_KEY setting in Vercel.");
         }
         
-        if (error.message?.includes("quota") || error.message?.includes("429")) {
+        // Distinguish between RPM (Requests Per Minute) and RPD (Requests Per Day)
+        if (errorMessage.includes("quota") || errorMessage.includes("429")) {
+          if (errorMessage.includes("exhausted") || errorMessage.includes("limit reach")) {
+             throw new Error("Daily Limit Reached: You've reached the free tier daily limit (1,500 requests). AI will reset tomorrow. Try using a different API Key if needed.");
+          }
           throw new Error(
-            "Rate Limit Exceeded: You've reached the 'Requests Per Minute' (RPM) limit. " +
-            "Please wait 60 seconds and try again. Caching is currently saving your quota where possible."
+            "Rate Limit Exceeded: You're calling the AI too fast. " +
+            "Please wait exactly 60 seconds without clicking anything and then try again. " +
+            "I've added a serial queue to help prevent this!"
           );
         }
 
-        throw error;
+        if (errorMessage.includes("503") || errorMessage.includes("overloaded")) {
+          throw new Error("AI Server Busy: Google's AI servers are currently overloaded. Please try again in 30 seconds.");
+        }
+
+        throw new Error(`AI Error: ${errorMessage || "Connection failed. Please check your internet or API key."}`);
       }
     });
   }
