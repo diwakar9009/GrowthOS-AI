@@ -7,8 +7,10 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   // Fallback to process.env for platforms like Vercel that don't use .env files at runtime
   const GEMINI_API_KEY = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+  const base = process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/` : '/';
   
   return {
+    base,
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(GEMINI_API_KEY),
