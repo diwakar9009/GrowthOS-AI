@@ -51,8 +51,23 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center space-y-4"
+        >
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+            <Flame className="h-10 w-10 animate-pulse" />
+          </div>
+          <div className="flex flex-col items-center space-y-2">
+            <h2 className="text-xl font-bold tracking-tight">GrowthOS AI</h2>
+            <div className="flex items-center space-x-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-xs font-medium">Initializing Command Center...</span>
+            </div>
+          </div>
+        </motion.div>
       </div>
     );
   }
