@@ -26,7 +26,8 @@ import { ReportBuilder } from "./components/ReportBuilder";
 import { LandingPage } from "./components/LandingPage";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 import { auth, googleProvider, signInWithPopup } from "./lib/firebase";
-import { Loader2 } from "lucide-react";
+import { Loader2, Flame } from "lucide-react";
+import { motion } from "motion/react";
 
 function AppContent() {
   const { user, loading } = useAuth();
