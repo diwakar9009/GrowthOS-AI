@@ -204,14 +204,7 @@ export function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    if (user && isAuthReady && !briefing && !loadingBriefing && !briefingInProgress.current && !briefingError) {
-      const timer = setTimeout(() => {
-        generateBriefing();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [user, isAuthReady, briefing, loadingBriefing, briefingError, clientCount, recentTasks.length]);
+  // useEffect removed to prevent auto-load and save user quota
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -258,6 +251,12 @@ export function Dashboard() {
                     <Zap className="h-3 w-3 mr-1" />
                     Retry Now
                   </Button>
+                  <button 
+                    className="text-[9px] text-muted-foreground underline hover:text-primary mt-1 opacity-50 hover:opacity-100"
+                    onClick={() => { AIService.resetSafetyPause(); setBriefingError(false); }}
+                  >
+                    Advanced: Clear Safety Lock
+                  </button>
                 </div>
               ) : briefing ? (
                 <div className="space-y-4">
@@ -275,7 +274,19 @@ export function Dashboard() {
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground italic py-4">No briefing available yet. Start by generating some content!</p>
+                <div className="flex flex-col items-center justify-center py-6 text-center space-y-3 border-2 border-dashed border-primary/10 rounded-xl bg-primary/5">
+                  <div className="p-2 rounded-full bg-primary/10 text-primary">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1 px-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary/60 tracking-wider">Growth Strategist Ready</p>
+                    <p className="text-[10px] text-muted-foreground">Click to analyze your current tasks and get today's personalized marketing briefing.</p>
+                  </div>
+                  <Button size="sm" className="h-8 transition-all hover:scale-105 shadow-sm" onClick={() => generateBriefing()}>
+                    <Zap className="h-3 w-3 mr-1" />
+                    AI Analysis
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

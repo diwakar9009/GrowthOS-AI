@@ -51,9 +51,15 @@ export class AIService {
     return Number(localStorage.getItem(this.LAST_REQ_KEY) || "0");
   }
 
+  static resetSafetyPause() {
+    localStorage.removeItem(this.COOLOFF_KEY);
+    localStorage.removeItem(this.LAST_REQ_KEY);
+  }
+
   private static setLastRequestTime(time: number) {
     localStorage.setItem(this.LAST_REQ_KEY, time.toString());
   }
+  
   private static executionQueue: Promise<any> = Promise.resolve();
 
   static async generateContent(prompt: string, config: AIGenerationConfig = {}) {
@@ -111,14 +117,17 @@ export class AIService {
         
         // Distinguish between RPM (Requests Per Minute) and RPD (Requests Per Day)
         if (errorMessage.includes("quota") || errorMessage.includes("429") || errorMessage.includes("limit")) {
-          // If we hit a 429, trigger a 70-second cool-off for ALL TABS
-          this.setCooloffUntil(Date.now() + 70000);
+          // If we hit a error, trigger a 75-second safety pause across ALL TABS
+          this.setCooloffUntil(Date.now() + 75000);
 
-          if (errorMessage.includes("exhausted") || errorMessage.includes("limit reach") || errorMessage.includes("daily")) {
-             throw new Error("Daily Limit Reached: You've reached the daily capacity for your Gemini Free key. It will reset naturally in 24 hours.");
+          if (errorMessage.toLowerCase().includes("exhausted") || 
+              errorMessage.toLowerCase().includes("limit reach") || 
+              errorMessage.toLowerCase().includes("daily") || 
+              errorMessage.toLowerCase().includes("quota")) {
+             throw new Error("Daily Limit Reached (1,500 reqs): You've hit the Gemini Free Tier daily cap. AI will reset tomorrow. Please check back then!");
           }
           throw new Error(
-            "AI Rate Limit: The free tier is busy. I've activated a 'Safety Pause' across your app. Please wait 70s for it to expire."
+            "AI Rate Limit: The free tier is busy. I've activated a 75s 'Safety Pause' to protect your key. Refresh in a minute."
           );
         }
 
