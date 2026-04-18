@@ -205,10 +205,10 @@ export function Dashboard() {
   };
 
   useEffect(() => {
-    if (user && isAuthReady && !briefing && !loadingBriefing && !briefingInProgress.current) {
+    if (user && isAuthReady && !briefing && !loadingBriefing && !briefingInProgress.current && !briefingError) {
       generateBriefing();
     }
-  }, [recentTasks.length, clientCount, isAuthReady, briefing, loadingBriefing]);
+  }, [user, isAuthReady, briefing, loadingBriefing, briefingError, clientCount, recentTasks.length]);
 
   return (
     <div className="space-y-6 md:space-y-8">
