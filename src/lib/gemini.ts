@@ -33,10 +33,22 @@ export class AIService {
     return this.instance;
   }
 
+  private static lastRequestTime = 0;
+  private static MIN_REQUEST_INTERVAL = 1000; // 1 second between requests minimum
+
   /**
    * Generates content using the specified config
    */
   static async generateContent(prompt: string, config: AIGenerationConfig = {}) {
+    const now = Date.now();
+    const timeSinceLast = now - this.lastRequestTime;
+    
+    if (timeSinceLast < this.MIN_REQUEST_INTERVAL) {
+      await new Promise(resolve => setTimeout(resolve, this.MIN_REQUEST_INTERVAL - timeSinceLast));
+    }
+    
+    this.lastRequestTime = Date.now();
+    
     const { 
       model = "gemini-3-flash-preview", 
       systemInstruction, 

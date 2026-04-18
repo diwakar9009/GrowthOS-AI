@@ -6,7 +6,7 @@ import { MOCK_SUGGESTIONS, MOCK_TRENDS } from "@/constants";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { db, collection, query, orderBy, limit, onSnapshot, where, handleFirestoreError, OperationType, addDoc } from "@/lib/firebase";
 import { AIService } from "@/lib/gemini";
 import ReactMarkdown from "react-markdown";
@@ -19,6 +19,8 @@ export function Dashboard() {
   const [briefing, setBriefing] = useState<string | null>(null);
   const [tipOfDay, setTipOfDay] = useState<string | null>(null);
   const [loadingBriefing, setLoadingBriefing] = useState(false);
+  const [briefingError, setBriefingError] = useState(false);
+  const briefingInProgress = useRef(false);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [teamCount, setTeamCount] = useState(0);
 
@@ -105,7 +107,7 @@ export function Dashboard() {
   }, [user]);
 
   const generateBriefing = async () => {
-    if (!user) return;
+    if (!user || briefingInProgress.current) return;
     
     // Simple client-side cache to prevent re-generation within a session
     const cacheKey = `briefing_${user.uid}`;
@@ -121,6 +123,8 @@ export function Dashboard() {
     }
 
     setLoadingBriefing(true);
+    setBriefingError(false);
+    briefingInProgress.current = true;
     try {
       const taskSummary = recentTasks.length > 0 
         ? recentTasks.map(t => `${t.type}: ${t.title}`).join(", ")
@@ -145,10 +149,14 @@ export function Dashboard() {
         tip: tipPart, 
         ts: Date.now() 
       }));
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      if (e.message?.includes("quota")) {
+        setBriefingError(true);
+      }
     } finally {
       setLoadingBriefing(false);
+      briefingInProgress.current = false;
     }
   };
 
@@ -197,10 +205,10 @@ export function Dashboard() {
   };
 
   useEffect(() => {
-    if (!briefing && isAuthReady) {
+    if (user && isAuthReady && !briefing && !loadingBriefing && !briefingInProgress.current) {
       generateBriefing();
     }
-  }, [recentTasks.length, clientCount, isAuthReady]);
+  }, [recentTasks.length, clientCount, isAuthReady, briefing, loadingBriefing]);
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -233,6 +241,20 @@ export function Dashboard() {
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground py-4">
                   <Loader2 className="h-4 w-4 animate-spin shrink-0" />
                   <span>Analyzing your recent activity...</span>
+                </div>
+              ) : briefingError ? (
+                <div className="flex flex-col items-center justify-center py-6 text-center space-y-3">
+                  <div className="p-2 rounded-full bg-amber-100 text-amber-600">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold">Rate Limit Reached</p>
+                    <p className="text-[10px] text-muted-foreground px-4">The AI is busy. Please wait a moment before retrying.</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => generateBriefing()}>
+                    <Zap className="h-3 w-3 mr-1" />
+                    Retry Now
+                  </Button>
                 </div>
               ) : briefing ? (
                 <div className="space-y-4">
