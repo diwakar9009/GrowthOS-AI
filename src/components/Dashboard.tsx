@@ -31,9 +31,9 @@ export function Dashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const quickActions = [
-    { name: "New Strategy", icon: Sparkles, href: "/tools", color: "bg-blue-500" },
-    { name: "Competitor", icon: Search, href: "/tools", color: "bg-orange-500" },
-    { name: "Lead Scorer", icon: Target, href: "/tools", color: "bg-purple-500" },
+    { name: "New Strategy", icon: Sparkles, href: "/tools?tool=strategy", color: "bg-blue-500" },
+    { name: "Competitor", icon: Search, href: "/tools?tool=competitor", color: "bg-orange-500" },
+    { name: "Lead Scorer", icon: Target, href: "/tools?tool=lead-scorer", color: "bg-purple-500" },
     { name: "Brand Kit", icon: Palette, href: "/brand-kit", color: "bg-pink-500" },
   ];
 

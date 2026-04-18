@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AIService } from "@/lib/gemini";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Button } from "./Button";
@@ -71,13 +72,31 @@ type ToolType = 'ads' | 'seo' | 'email' | 'utm' | 'downloader' | 'compressor' | 
 
 export function Tools() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [activeTool, setActiveTool] = useState<ToolType>('strategy');
+
+  useEffect(() => {
+    const toolParam = searchParams.get('tool');
+    if (toolParam) {
+      setActiveTool(toolParam as ToolType);
+      setMobileView('workspace');
+    }
+  }, [searchParams]);
   const [mobileView, setMobileView] = useState<'list' | 'workspace'>('list');
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [apiKeyMissing, setApiKeyMissing] = useState(false);
+
+  useEffect(() => {
+    // Check if API key is defined
+    const key = process.env.GEMINI_API_KEY;
+    if (!key || key === "undefined" || key === "") {
+      setApiKeyMissing(true);
+    }
+  }, []);
 
   // Tool Inputs
   const [input1, setInput1] = useState("");
@@ -566,10 +585,10 @@ export function Tools() {
           handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}/tasks`);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Tool Error:", error);
-      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}/tasks`);
-      setError("An unexpected error occurred while running the tool. Please try again later.");
+      const errorMessage = error.message || "An unexpected error occurred while running the tool. Please try again later.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -709,6 +728,28 @@ export function Tools() {
           )}
         </div>
       </div>
+      
+      {apiKeyMissing && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
+              <ShieldAlert className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold">Gemini API Key Missing</p>
+              <p className="text-xs opacity-90">AI tools will not work until you add your GEMINI_API_KEY to your Vercel/GitHub environment variables.</p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-amber-200 hover:bg-amber-100 text-amber-700 w-full md:w-auto"
+            onClick={() => window.open('https://vercel.com/docs/concepts/projects/environment-variables', '_blank')}
+          >
+            How to fix
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-4">
         {/* Tool Sidebar */}

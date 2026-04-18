@@ -39,7 +39,8 @@ function AppContent() {
     } catch (error: any) {
       console.error("Login failed:", error);
       if (error.code === "auth/unauthorized-domain") {
-        setLoginError("This domain is not authorized in Firebase. Please add this URL to 'Authorized Domains' in your Firebase Console.");
+        const currentDomain = window.location.hostname;
+        setLoginError(`Domain Unauthorized: Please add "${currentDomain}" to 'Authorized Domains' in your Firebase Console (Authentication > Settings).`);
       } else if (error.code === "auth/popup-blocked") {
         setLoginError("Login popup was blocked by your browser.");
       } else {

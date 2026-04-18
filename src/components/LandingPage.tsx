@@ -1,8 +1,16 @@
 import { Button } from "./Button";
-import { AlertCircle, Flame, Sparkles, TrendingUp, Zap, ShieldCheck } from "lucide-react";
+import { AlertCircle, Flame, Sparkles, TrendingUp, Zap, ShieldCheck, Copy, Check, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { useState } from "react";
 
 export function LandingPage({ onLogin, error }: { onLogin: () => void, error?: string | null }) {
+  const [copied, setCopied] = useState(false);
+
+  const copyDomain = () => {
+    navigator.clipboard.writeText(window.location.hostname);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-16 items-center justify-between px-6 md:px-12">
@@ -44,10 +52,43 @@ export function LandingPage({ onLogin, error }: { onLogin: () => void, error?: s
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex items-center space-x-2 p-4 rounded-lg bg-destructive/10 text-destructive text-sm font-medium border border-destructive/20 max-w-md mx-auto"
+                    className="flex flex-col space-y-3 p-4 rounded-xl bg-destructive/10 text-destructive text-sm font-medium border border-destructive/20 max-w-md mx-auto"
                   >
-                    <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                    <span>{error}</span>
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                      <span className="text-left">{error}</span>
+                    </div>
+                    {error?.includes("Domain Unauthorized") && (
+                      <div className="flex flex-col space-y-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="bg-background/50 border-destructive/20 hover:bg-destructive/5 text-destructive w-full flex items-center justify-center space-x-2"
+                          onClick={copyDomain}
+                        >
+                          {copied ? (
+                            <>
+                              <Check className="h-4 w-4 text-green-600" />
+                              <span className="text-green-600">Domain Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4" />
+                              <span>1. Copy Domain Name</span>
+                            </>
+                          )}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="bg-background/50 border-destructive/20 hover:bg-destructive/5 text-destructive w-full flex items-center justify-center space-x-2"
+                          onClick={() => window.open('https://console.firebase.google.com/project/gen-lang-client-0000812465/authentication/settings', '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          <span>2. Open Firebase Settings</span>
+                        </Button>
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>

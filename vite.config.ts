@@ -5,6 +5,7 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
+  // Fallback to process.env for platforms like Vercel that don't use .env files at runtime
   const GEMINI_API_KEY = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
   const base = process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/` : '/';
   
@@ -19,22 +20,9 @@ export default defineConfig(({mode}) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
-    // --- YE SECTION ADD KIYA HAI ---
-    build: {
-      chunkSizeWarningLimit: 2000, // Warning limit ko badha diya
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            // Isse bade packages (jaise Gemini SDK ya Vendor files) alag chunks mein toot jayenge
-            if (id.includes('node_modules')) {
-              return id.toString().split('node_modules/')[1].split('/')[0].toString();
-            }
-          },
-        },
-      },
-    },
-    // ------------------------------
     server: {
+      // HMR is disabled in AI Studio via DISABLE_HMR env var.
+      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };

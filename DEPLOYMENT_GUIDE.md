@@ -2,16 +2,18 @@
 
 If you are deploying this application to Vercel or GitHub Pages, follow these critical steps to ensure the AI tools and Firebase features work correctly.
 
-## 1. Firebase Authentication (Authorized Domains)
+## 1. Firebase Authentication (Authorized Domains) - **CRITICAL STEP**
 
-Firebase Auth will block login attempts from new domains (like Vercel or GitHub Pages) by default.
+Firebase Auth will block login attempts from new domains (like Vercel or GitHub Pages) by default. You MUST do this manually:
 
 1.  Go to the [Firebase Console](https://console.firebase.google.com/).
 2.  Select your project: `gen-lang-client-0000812465`.
-3.  Go to **Authentication** > **Settings** > **Authorized Domains**.
-4.  Add your production domains:
-    *   `growth-os-ai.vercel.app` (or your specific Vercel URL)
-    *   `<your-username>.github.io` (if using GitHub Pages)
+3.  Go to **Authentication** (sidebar) > **Settings** (tab) > **Authorized Domains** (sidebar).
+4.  Add your exact production domain:
+    *   **Vercel:** `growth-os-ai.vercel.app`
+    *   **AI Studio Preview:** `ais-dev-byqoegw6scucd7fp6dxj5o-349495182505.asia-southeast1.run.app`
+    *   **GitHub Pages:** `<your-username>.github.io`
+    *   **Local Preview:** `localhost`
 
 ## 2. API Key Configuration (Vercel)
 
