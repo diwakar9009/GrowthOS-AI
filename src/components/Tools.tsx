@@ -60,6 +60,7 @@ import {
   X,
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
   Printer
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
@@ -73,13 +74,16 @@ type ToolType = 'ads' | 'seo' | 'email' | 'utm' | 'downloader' | 'compressor' | 
 export function Tools() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const [activeTool, setActiveTool] = useState<ToolType>('strategy');
+  const [activeTool, setActiveTool] = useState<ToolType | null>(null);
 
   useEffect(() => {
     const toolParam = searchParams.get('tool');
     if (toolParam) {
       setActiveTool(toolParam as ToolType);
       setMobileView('workspace');
+    } else {
+      setActiveTool(null);
+      setMobileView('list');
     }
   }, [searchParams]);
   const [mobileView, setMobileView] = useState<'list' | 'workspace'>('list');
@@ -742,14 +746,120 @@ export function Tools() {
         </div>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-4">
-        {/* Tool Sidebar */}
-        <div className={cn(
-          "lg:col-span-1 space-y-6",
-          mobileView === 'workspace' ? "hidden lg:block" : "block"
-        )}>
-          <div className="hidden lg:block space-y-6 sticky top-24">
-            {categories.map(category => (
+      {!activeTool ? (
+        <div className="space-y-12 py-4">
+          {/* Tool Hero */}
+          <section className="relative overflow-hidden rounded-3xl bg-primary/5 border border-primary/10 p-8 md:p-12 text-center space-y-6">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Wrench className="h-64 w-64 -rotate-12" />
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4 relative z-10"
+            >
+              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
+                <Sparkles className="h-3 w-3" />
+                <span>The Future of Marketing</span>
+              </div>
+              <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
+                Your AI Marketing <br /> Command Center
+              </h2>
+              <p className="max-w-xl mx-auto text-sm md:text-base text-muted-foreground font-medium">
+                Select from our suite of professional-grade intelligences to automate research, 
+                optimize content, and scale your growth.
+              </p>
+            </motion.div>
+          </section>
+
+          {/* Categories Grid */}
+          {categories.map(category => (
+            <div key={category} className="space-y-6">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-extrabold tracking-tight">{category}</h3>
+                  <p className="text-xs text-muted-foreground font-medium">Select a {category.toLowerCase()} tool to begin analysis.</p>
+                </div>
+                <div className="hidden md:flex items-center space-x-1">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{tools.filter(t => t.category === category).length} Tools Available</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {tools.filter(t => t.category === category && (
+                  !searchQuery || 
+                  t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  t.desc.toLowerCase().includes(searchQuery.toLowerCase())
+                )).map((tool) => (
+                  <motion.button
+                    key={tool.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setActiveTool(tool.id as ToolType);
+                      setMobileView('workspace');
+                      const newParams = new URLSearchParams(searchParams);
+                      newParams.set('tool', tool.id);
+                      window.history.pushState({}, '', `?${newParams.toString()}`);
+                    }}
+                    className="flex flex-col text-left p-5 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all hover:shadow-xl hover:shadow-primary/5 group relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 p-2 opacity-5 scale-150 group-hover:scale-175 transition-transform">
+                      <tool.icon className="h-12 w-12" />
+                    </div>
+                    <div className="p-3 rounded-xl bg-primary/10 text-primary w-fit mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors shadow-sm">
+                      <tool.icon className="h-5 w-5" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-sm tracking-tight">{tool.name}</h4>
+                        {newTools.includes(tool.id) && (
+                          <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-black">NEW</span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{tool.desc}</p>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-dashed flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
+                        Launch Tool
+                        <ArrowRight className="h-3 w-3" />
+                      </span>
+                      {[
+                        'competitor', 'influencer', 'trends', 'market-research', 
+                        'keyword-gap', 'social-listening', 'social-audit', 
+                        'competitor-pricing', 'site-audit', 'rank-tracker'
+                      ].includes(tool.id) && (
+                        <Globe className="h-3 w-3 text-amber-500" />
+                      )}
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-8 lg:grid-cols-4">
+          {/* Tool Sidebar */}
+          <div className={cn(
+            "lg:col-span-1 space-y-6",
+            mobileView === 'workspace' ? "hidden lg:block" : "block"
+          )}>
+            <div className="hidden lg:block space-y-6 sticky top-24">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full flex items-center justify-start gap-2 text-xs font-bold text-muted-foreground hover:text-primary mb-4"
+                onClick={() => {
+                  setActiveTool(null);
+                  const newParams = new URLSearchParams(searchParams);
+                  newParams.delete('tool');
+                  window.history.pushState({}, '', `?${newParams.toString()}`);
+                }}
+              >
+                <ArrowLeft className="h-3 w-3" />
+                Back to Library
+              </Button>
+              {categories.map(category => (
               <div key={category} className="space-y-2">
                 <h3 className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-4">
                   {category}
@@ -887,10 +997,16 @@ export function Tools() {
                   variant="outline" 
                   size="sm" 
                   className="h-9 px-3 rounded-xl hover:bg-accent flex items-center gap-2 border-primary/20"
-                  onClick={() => setMobileView('list')}
+                  onClick={() => {
+                    setMobileView('list');
+                    setActiveTool(null);
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.delete('tool');
+                    window.history.pushState({}, '', `?${newParams.toString()}`);
+                  }}
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  <span className="text-xs font-bold">Tools</span>
+                  <span className="text-xs font-bold">Library</span>
                 </Button>
                 <div className="flex flex-col overflow-hidden flex-1">
                   <span className="text-[9px] font-bold text-primary uppercase tracking-widest">Active Tool</span>
@@ -1355,6 +1471,7 @@ export function Tools() {
           )}
         </div>
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 }
