@@ -12,7 +12,7 @@ import { AIService } from "@/lib/gemini";
 import ReactMarkdown from "react-markdown";
 
 export function Dashboard() {
-  const { profile, user } = useAuth();
+  const { profile, user, isAuthReady } = useAuth();
   const [recentTasks, setRecentTasks] = useState<any[]>([]);
   const [clientCount, setClientCount] = useState(0);
   const [nextPost, setNextPost] = useState<any>(null);
@@ -106,6 +106,20 @@ export function Dashboard() {
 
   const generateBriefing = async () => {
     if (!user) return;
+    
+    // Simple client-side cache to prevent re-generation within a session
+    const cacheKey = `briefing_${user.uid}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      const { briefing: b, tip: t, ts } = JSON.parse(cached);
+      // Cache for 30 minutes
+      if (Date.now() - ts < 30 * 60 * 1000) {
+        setBriefing(b);
+        setTipOfDay(t);
+        return;
+      }
+    }
+
     setLoadingBriefing(true);
     try {
       const taskSummary = recentTasks.length > 0 
@@ -124,6 +138,13 @@ export function Dashboard() {
       
       setBriefing(briefingPart);
       setTipOfDay(tipPart);
+
+      // Store in session cache
+      sessionStorage.setItem(cacheKey, JSON.stringify({ 
+        briefing: briefingPart, 
+        tip: tipPart, 
+        ts: Date.now() 
+      }));
     } catch (e) {
       console.error(e);
     } finally {
@@ -176,10 +197,10 @@ export function Dashboard() {
   };
 
   useEffect(() => {
-    if (!briefing) {
+    if (!briefing && isAuthReady) {
       generateBriefing();
     }
-  }, [recentTasks, clientCount]);
+  }, [recentTasks.length, clientCount, isAuthReady]);
 
   return (
     <div className="space-y-6 md:space-y-8">
