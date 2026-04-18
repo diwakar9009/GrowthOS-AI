@@ -39,7 +39,11 @@ function AppContent() {
       await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
       console.error("Login failed:", error);
-      if (error.code === "auth/unauthorized-domain") {
+      const isUnauthorizedDomain = error.code === "auth/unauthorized-domain" || 
+                                   error.message?.includes("auth/unauthorized-domain") ||
+                                   error.message?.includes("unauthorized-domain");
+      
+      if (isUnauthorizedDomain) {
         const currentDomain = window.location.hostname;
         setLoginError(`Domain Unauthorized: Please add "${currentDomain}" to 'Authorized Domains' in your Firebase Console (Authentication > Settings).`);
       } else if (error.code === "auth/popup-blocked") {
