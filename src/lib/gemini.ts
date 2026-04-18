@@ -65,7 +65,11 @@ export class AIService {
       }
       
       if (error.message?.includes("quota")) {
-        throw new Error("Free tier quota exceeded for the Gemini API. Please try again in 1 minute.");
+        throw new Error(
+          "Rate Limit Exceeded: You've reached the 'Requests Per Minute' (RPM) limit for the Gemini API free tier. " +
+          "Pro models allow ~2 requests per minute, while Flash allows ~15. " +
+          "Please wait 60 seconds and try again."
+        );
       }
 
       throw error;

@@ -544,25 +544,16 @@ export function Tools() {
         const utm = `${baseUrl}?utm_source=${input2 || 'google'}&utm_medium=cpc&utm_campaign=growth_os&utm_content=ai_assistant`;
         setResult(utm);
       } else {
-        const isDeepSearchTool = [
-          'competitor', 'influencer', 'strategy', 'youtube-seo', 
-          'market-research', 'keyword-gap', 'social-listening', 
-          'social-audit', 'ads', 'seo', 'campaign-brief', 
-          'crisis-comms', 'report-gen', 'content-curation',
-          'post-optimizer', 'community-mgr', 'email', 'hashtag',
-          'roi', 'abtest', 'brand-voice', 'product-desc', 'bio-gen',
-          'video-script', 'review-reply', 'lead-magnet', 'email-sequence',
-          'landing-page', 'social-reply', 'content-calendar', 'ad-budget',
-          'lead-scorer', 'sales-script', 'press-release', 'link-bio',
-          'advocacy', 'content-repurpose', 'competitor-pricing', 'ad-creative',
-          'site-audit', 'rank-tracker', 'backlink-checker', 'robots-sitemap',
-          'url-shortener', 'qr-generator', 'contract-gen', 'time-estimate'
+        const NEEDS_SEARCH = [
+          'competitor', 'influencer', 'trends', 'market-research', 
+          'keyword-gap', 'social-listening', 'social-audit', 
+          'competitor-pricing', 'site-audit', 'rank-tracker'
         ].includes(activeTool);
 
         const text = await AIService.generateContent(prompt, {
-          model: isDeepSearchTool ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview",
+          model: NEEDS_SEARCH ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview",
           systemInstruction,
-          useSearch: isDeepSearchTool
+          useSearch: NEEDS_SEARCH
         });
         
         if (activeTool === 'youtube-seo' && text.toLowerCase().includes("could not find") && text.toLowerCase().includes("video")) {
