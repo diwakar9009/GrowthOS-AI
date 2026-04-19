@@ -3,224 +3,122 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ===============================================================
-    // Assumed Data Model
+    // 0. Default Deny Catch-all
     // ===============================================================
-    //
-    // Collection: /users/{userId}
-    // Document ID: userId (Firebase Auth UID)
-    // Fields:
-    //   - uid: string (required) - Firebase Auth UID
-    //   - email: string (required, email format)
-    //   - displayName: string
-    //   - photoURL: string (url format)
-    //   - niche: string
-    //   - platform: string (enum: instagram, youtube, both)
-    //   - streak: number (required)
-    //   - lastActive: string (ISO 8601)
-    //   - points: number (required)
-    //   - createdAt: string (ISO 8601, required)
-    //
-    // Collection: /users/{userId}/tasks/{taskId}
-    // Document ID: taskId (auto-generated)
-    // Fields:
-    //   - userId: string (required)
-    //   - title: string (required)
-    //   - description: string
-    //   - type: string (enum: caption, trend, suggestion, tool, required)
-    //   - content: string (JSON string)
-    //   - createdAt: string (ISO 8601, required)
-    //
-    // ===============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
 
     // ===============================================================
-    // Helper Functions
+    // 1. Master Gate & Global Helpers
     // ===============================================================
-
-    function isAuthenticated() {
+    function isSignedIn() {
       return request.auth != null;
     }
 
+    function isVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true);
+    }
+
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
     }
 
     function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
-    }
-
-    function isValidDateString(dateStr) {
-      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
-    }
-
-    function hasOnlyAllowedFields(data, allowedFields) {
-      return data.keys().hasOnly(allowedFields);
-    }
-
-    function hasRequiredFields(data, requiredFields) {
-      return data.keys().hasAll(requiredFields);
+      return email is string && email.size() <= 256 && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     }
 
     // ===============================================================
-    // Domain Validators
+    // 2. Validation Blueprints (Pillar 2)
     // ===============================================================
-
+    
     function isValidUser(data) {
-      return hasRequiredFields(data, ['uid', 'email', 'streak', 'points', 'createdAt']) &&
-             hasOnlyAllowedFields(data, ['uid', 'email', 'displayName', 'photoURL', 'niche', 'platform', 'streak', 'lastActive', 'points', 'createdAt']) &&
+      let requiredFields = ['uid', 'email', 'streak', 'points', 'createdAt'];
+      let allowedFields = ['uid', 'email', 'displayName', 'photoURL', 'niche', 'platform', 'streak', 'lastActive', 'points', 'createdAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().size() <= allowedFields.size() &&
              data.uid == request.auth.uid &&
              isValidEmail(data.email) &&
              data.streak is number && data.streak >= 0 &&
              data.points is number && data.points >= 0 &&
-             isValidDateString(data.createdAt) &&
-             (data.platform == null || data.platform in ['instagram', 'youtube', 'both']);
+             data.createdAt is string && data.createdAt.size() <= 64;
     }
 
     function isValidTask(data, userId) {
-      return hasRequiredFields(data, ['userId', 'title', 'type', 'createdAt']) &&
-             hasOnlyAllowedFields(data, ['userId', 'clientId', 'title', 'description', 'type', 'content', 'createdAt']) &&
+      let requiredFields = ['userId', 'title', 'type', 'createdAt'];
+      let allowedFields = ['userId', 'clientId', 'title', 'description', 'type', 'content', 'createdAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().size() <= allowedFields.size() &&
              data.userId == userId &&
              data.userId == request.auth.uid &&
              data.type in ['caption', 'trend', 'suggestion', 'tool'] &&
-             isValidDateString(data.createdAt);
+             data.title is string && data.title.size() <= 500 &&
+             data.createdAt is string && data.createdAt.size() <= 64;
     }
 
     function isValidClient(data, userId) {
-      return hasRequiredFields(data, ['userId', 'name', 'status', 'createdAt']) &&
-             hasOnlyAllowedFields(data, ['userId', 'name', 'email', 'niche', 'brandVoice', 'status', 'progress', 'createdAt']) &&
+      let requiredFields = ['userId', 'name', 'status', 'createdAt'];
+      let allowedFields = ['userId', 'name', 'email', 'niche', 'brandVoice', 'status', 'progress', 'createdAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().size() <= allowedFields.size() &&
              data.userId == userId &&
              data.userId == request.auth.uid &&
              data.status in ['active', 'on-hold', 'completed'] &&
-             isValidDateString(data.createdAt) &&
-             (data.email == null || isValidEmail(data.email));
-    }
-
-    function isValidCalendarEvent(data, userId) {
-      return hasRequiredFields(data, ['userId', 'clientId', 'title', 'date', 'status']) &&
-             hasOnlyAllowedFields(data, ['userId', 'clientId', 'title', 'platform', 'date', 'status']) &&
-             data.userId == userId &&
-             data.userId == request.auth.uid &&
-             data.status in ['planned', 'scheduled', 'posted'];
-    }
-
-    function isValidProject(data, userId) {
-      return hasRequiredFields(data, ['userId', 'title', 'status', 'createdAt']) &&
-             hasOnlyAllowedFields(data, ['userId', 'clientId', 'title', 'description', 'status', 'priority', 'dueDate', 'createdAt']) &&
-             data.userId == userId &&
-             data.userId == request.auth.uid &&
-             data.status in ['todo', 'in-progress', 'review', 'done'] &&
-             (data.priority == null || data.priority in ['low', 'medium', 'high']) &&
-             isValidDateString(data.createdAt);
-    }
-
-    function isValidAsset(data, userId) {
-      return hasRequiredFields(data, ['userId', 'name', 'type', 'url', 'createdAt']) &&
-             hasOnlyAllowedFields(data, ['userId', 'clientId', 'name', 'type', 'url', 'createdAt']) &&
-             data.userId == userId &&
-             data.userId == request.auth.uid &&
-             data.type in ['image', 'video', 'doc', 'link'] &&
-             isValidDateString(data.createdAt);
-    }
-
-    function isValidInvoice(data, userId) {
-      return hasRequiredFields(data, ['userId', 'clientId', 'amount', 'status', 'createdAt']) &&
-             hasOnlyAllowedFields(data, ['userId', 'clientId', 'clientName', 'amount', 'dueDate', 'description', 'status', 'createdAt']) &&
-             data.userId == userId &&
-             data.userId == request.auth.uid &&
-             data.amount is number &&
-             data.status in ['pending', 'paid', 'overdue'] &&
-             isValidDateString(data.createdAt);
-    }
-
-    function isValidTeamMember(data, userId) {
-      return hasRequiredFields(data, ['userId', 'email', 'role', 'status', 'createdAt']) &&
-             hasOnlyAllowedFields(data, ['userId', 'email', 'role', 'status', 'createdAt']) &&
-             data.userId == userId &&
-             data.userId == request.auth.uid &&
-             isValidEmail(data.email) &&
-             data.role in ['Admin', 'Editor', 'Viewer'] &&
-             data.status in ['invited', 'active'] &&
-             isValidDateString(data.createdAt);
-    }
-
-    function isValidBrandKit(data, userId) {
-      return hasRequiredFields(data, ['userId', 'name', 'createdAt']) &&
-             hasOnlyAllowedFields(data, ['userId', 'clientId', 'name', 'colors', 'fonts', 'createdAt']) &&
-             data.userId == userId &&
-             data.userId == request.auth.uid &&
-             data.colors is list &&
-             data.fonts is list &&
-             isValidDateString(data.createdAt);
+             data.name is string && data.name.size() <= 100 &&
+             data.createdAt is string && data.createdAt.size() <= 64;
     }
 
     // ===============================================================
-    // Rules
+    // 3. Resource Matches (Master Gate Pattern)
     // ===============================================================
 
     match /users/{userId} {
-      allow read: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidUser(request.resource.data);
-      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId) && isValidId(userId) && resource.data.uid == request.auth.uid;
+      
+      allow create: if isVerified() && isOwner(userId) && isValidUser(incoming());
+      allow update: if isVerified() && isOwner(userId) && isValidUser(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'niche', 'platform', 'streak', 'lastActive', 'points', 'createdAt'])
+      );
 
       match /tasks/{taskId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidTask(request.resource.data, userId);
-        allow update: if isOwner(userId) && isValidTask(request.resource.data, userId);
+        allow get: if isOwner(userId) && isValidId(taskId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        
+        allow create: if isVerified() && isOwner(userId) && isValidTask(incoming(), userId);
+        allow update: if isVerified() && isOwner(userId) && isValidTask(incoming(), userId) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'content', 'clientId'])
+        );
         allow delete: if isOwner(userId);
       }
 
       match /clients/{clientId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidClient(request.resource.data, userId);
-        allow update: if isOwner(userId) && isValidClient(request.resource.data, userId);
+        allow get: if isOwner(userId) && isValidId(clientId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        
+        allow create: if isVerified() && isOwner(userId) && isValidClient(incoming(), userId);
+        allow update: if isVerified() && isOwner(userId) && isValidClient(incoming(), userId) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'niche', 'brandVoice', 'status', 'progress'])
+        );
         allow delete: if isOwner(userId);
       }
 
-      match /calendar/{eventId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidCalendarEvent(request.resource.data, userId);
-        allow update: if isOwner(userId) && isValidCalendarEvent(request.resource.data, userId);
-        allow delete: if isOwner(userId);
+      // 4. Fallback for other potential sub-resources
+      match /{allSubcollections=**} {
+        allow read, write: if isOwner(userId);
       }
-
-      match /projects/{projectId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidProject(request.resource.data, userId);
-        allow update: if isOwner(userId) && isValidProject(request.resource.data, userId);
-        allow delete: if isOwner(userId);
-      }
-
-      match /assets/{assetId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidAsset(request.resource.data, userId);
-        allow update: if isOwner(userId) && isValidAsset(request.resource.data, userId);
-        allow delete: if isOwner(userId);
-      }
-
-      match /invoices/{invoiceId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidInvoice(request.resource.data, userId);
-        allow update: if isOwner(userId) && isValidInvoice(request.resource.data, userId);
-        allow delete: if isOwner(userId);
-      }
-
-      match /team/{memberId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidTeamMember(request.resource.data, userId);
-        allow update: if isOwner(userId) && isValidTeamMember(request.resource.data, userId);
-        allow delete: if isOwner(userId);
-      }
-
-      match /brandkits/{kitId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidBrandKit(request.resource.data, userId);
-        allow update: if isOwner(userId) && isValidBrandKit(request.resource.data, userId);
-        allow delete: if isOwner(userId);
-      }
-    }
-
-    // Default deny
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }
