@@ -61,7 +61,8 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
-  Printer
+  Printer,
+  RotateCcw
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { db, collection, addDoc, query, orderBy, onSnapshot, handleFirestoreError, OperationType } from "@/lib/firebase";
@@ -1445,12 +1446,15 @@ export function Tools() {
                       <span>{error}</span>
                     </div>
                     {error.includes("Rate Limit") && (
-                      <button 
+                      <Button 
+                        variant="link"
+                        size="sm"
                         onClick={() => { AIService.resetSafetyPause(); setError(null); }}
-                        className="text-[10px] font-bold underline hover:text-primary transition-colors text-left pl-6"
+                        className="text-[10px] font-bold underline hover:text-primary transition-colors text-left pl-6 h-auto p-0"
                       >
+                        <RotateCcw className="h-3 w-3 mr-1" />
                         Force Reset Safety Lock
-                      </button>
+                      </Button>
                     )}
                   </motion.div>
                 )}

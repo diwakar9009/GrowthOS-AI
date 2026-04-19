@@ -89,7 +89,7 @@ export class AIService {
         throw new Error(`AI Limit Protect: Resuming in ${remaining}s. To save your free quota, I've paused AI across all your tabs temporarily.`);
       }
 
-      const interval = model.includes("pro") ? 20000 : 4000; 
+      const interval = model.includes("pro") ? 10000 : 2000; 
       const lastReq = this.getLastRequestTime();
       const timeSinceLast = now - lastReq;
       
@@ -145,14 +145,14 @@ export class AIService {
         
         if (errorMessage.includes("quota") || errorMessage.includes("429") || errorMessage.includes("limit")) {
           const now = Date.now();
-          this.setCooloffUntil(now + 65000);
+          this.setCooloffUntil(now + 30000); // Reduced to 30s for better UX
           throw new Error(
-            "Rate Limit Exceeded: You're calling the AI too fast. I've activated a 65s 'Safety Pause' to protect your free quota."
+            "Rate Limit Exceeded: You're calling the AI too fast. I've activated a 30s 'Safety Pause' to protect your free quota."
           );
         }
 
         if (errorMessage.includes("504") || errorMessage.toLowerCase().includes("timeout")) {
-          throw new Error("Request Timed Out: Vercel functions have a 10s limit. Please try a simpler request or one without 'Live Research'.");
+          throw new Error("Request Timed Out: The AI research took too long. Please try again or use a simpler request.");
         }
 
         throw new Error(`AI Error: ${errorMessage || "Connection failed. Please check your internet or server status."}`);
