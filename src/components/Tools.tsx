@@ -387,6 +387,20 @@ export function Tools() {
         - 3 Post Variations for LinkedIn, Twitter, and Instagram.
         - **Sharing Guidelines**: Tips for employees to personalize the message.
         - **Impact Analysis**: How this campaign will boost the brand's organic reach.`;
+      } else if (activeTool === 'downloader') {
+        prompt = `As a Social Media Specialist, provide a professional strategy and guide for downloading and archiving content from: ${input1}. 
+        Focus Context: ${input2 || 'Content Archiving'}.
+        Include:
+        - Best practices for saving high-quality versions.
+        - Copyright and fair use considerations for this specific content type.
+        - Strategic ideas on how to use this archived content for internal benchmarking.`;
+      } else if (activeTool === 'compressor') {
+        prompt = `As a Web Performance Expert, provide a guide on optimizing and compressing the brand assets for "${input1}". 
+        Platform Focus: ${input2 || 'Web/Mobile'}.
+        Include:
+        - Recommended compression ratios for JPEGs, PNGs, and SVGs.
+        - Best tools for lossless vs lossy compression in 2024.
+        - Impact of optimized assets on Core Web Vitals and user experience.`;
       } else if (activeTool === 'content-curation') {
         prompt = `As a Thought Leadership Strategist, find and curate 5 high-quality content pieces for: "${input1}". 
         Target Audience: ${input2 || 'General'}.
@@ -550,8 +564,9 @@ export function Tools() {
       } else {
         const NEEDS_SEARCH = [
           'competitor', 'influencer', 'trends', 'market-research', 
-          'keyword-gap', 'social-listening', 'social-audit', 
-          'competitor-pricing', 'site-audit', 'rank-tracker'
+          'keyword-gap', 'social-listening', 'social-audit', 'ads', 'seo',
+          'competitor-pricing', 'site-audit', 'rank-tracker', 'backlink-checker',
+          'strategy', 'market-research', 'youtube-seo'
         ].includes(activeTool);
 
         const text = await AIService.generateContent(prompt, {
@@ -869,8 +884,12 @@ export function Tools() {
                     <button
                       key={tool.id}
                       onClick={() => {
+                        const newParams = new URLSearchParams(searchParams);
+                        newParams.set('tool', tool.id);
+                        window.history.pushState({}, '', `?${newParams.toString()}`);
                         setActiveTool(tool.id as ToolType);
                         setResult(null);
+                        setError(null);
                         setInput1("");
                         setInput2("");
                         setCompressedImage(null);
@@ -935,6 +954,9 @@ export function Tools() {
                 <button
                   key={tool.id}
                   onClick={() => {
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.set('tool', tool.id);
+                    window.history.pushState({}, '', `?${newParams.toString()}`);
                     setActiveTool(tool.id as ToolType);
                     setResult(null);
                     setError(null);
@@ -961,7 +983,8 @@ export function Tools() {
                     {[
                       'competitor', 'influencer', 'trends', 'market-research', 
                       'keyword-gap', 'social-listening', 'social-audit', 
-                      'competitor-pricing', 'site-audit', 'rank-tracker'
+                      'competitor-pricing', 'site-audit', 'rank-tracker', 'backlink-checker',
+                      'strategy', 'ads', 'seo', 'youtube-seo'
                     ].includes(tool.id) && (
                       <div className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-0.5 shadow-sm border border-white">
                         <Globe className="h-2 w-2" />
@@ -1123,7 +1146,8 @@ export function Tools() {
                       {[
                         'competitor', 'influencer', 'trends', 'market-research', 
                         'keyword-gap', 'social-listening', 'social-audit', 
-                        'competitor-pricing', 'site-audit', 'rank-tracker'
+                        'competitor-pricing', 'site-audit', 'rank-tracker', 'backlink-checker',
+                        'strategy', 'ads', 'seo', 'youtube-seo'
                       ].includes(activeTool) && (
                         <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-md font-black uppercase flex items-center gap-1">
                           <Globe className="h-2 w-2" />
@@ -1414,10 +1438,20 @@ export function Tools() {
                   <motion.div 
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
-                    className="flex items-center space-x-2 p-3 rounded-lg bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20"
+                    className="flex flex-col space-y-2 p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20 shadow-inner"
                   >
-                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                    <span>{error}</span>
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                    {error.includes("Rate Limit") && (
+                      <button 
+                        onClick={() => { AIService.resetSafetyPause(); setError(null); }}
+                        className="text-[10px] font-bold underline hover:text-primary transition-colors text-left pl-6"
+                      >
+                        Force Reset Safety Lock
+                      </button>
+                    )}
                   </motion.div>
                 )}
               </CardContent>

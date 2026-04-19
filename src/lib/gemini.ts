@@ -36,11 +36,20 @@ export class AIService {
     return this.instance;
   }
 
-  private static readonly COOLOFF_KEY = "growthos_ai_cooloff";
-  private static readonly LAST_REQ_KEY = "growthos_ai_last_req";
+  private static readonly COOLOFF_KEY = "growthos_ai_cooloff_v2";
+  private static readonly LAST_REQ_KEY = "growthos_ai_last_req_v2";
+  private static readonly DAILY_QUOTA_KEY = "growthos_ai_daily_reset";
 
   private static getCooloffUntil(): number {
-    return Number(localStorage.getItem(this.COOLOFF_KEY) || "0");
+    const val = localStorage.getItem(this.COOLOFF_KEY);
+    if (!val) return 0;
+    const time = Number(val);
+    // If the cooloff is more than 1 hour in the past, ignore it (stale data safety)
+    if (Date.now() - time > 3600000) {
+      this.resetSafetyPause();
+      return 0;
+    }
+    return time;
   }
 
   private static setCooloffUntil(time: number) {
@@ -63,6 +72,15 @@ export class AIService {
   private static executionQueue: Promise<any> = Promise.resolve();
 
   static async generateContent(prompt: string, config: AIGenerationConfig = {}) {
+    // Check daily reset
+    const today = new Date().toDateString();
+    const lastReset = localStorage.getItem(this.DAILY_QUOTA_KEY);
+    if (lastReset !== today) {
+      localStorage.setItem(this.DAILY_QUOTA_KEY, today);
+      // Optional: Clear other keys if it's a new day
+      this.resetSafetyPause();
+    }
+
     // Chain onto the current queue to ensure serial execution
     return this.executionQueue = this.executionQueue.then(async () => {
       const { 
@@ -117,17 +135,21 @@ export class AIService {
         
         // Distinguish between RPM (Requests Per Minute) and RPD (Requests Per Day)
         if (errorMessage.includes("quota") || errorMessage.includes("429") || errorMessage.includes("limit")) {
-          // If we hit a error, trigger a 75-second safety pause across ALL TABS
-          this.setCooloffUntil(Date.now() + 75000);
-
+          const now = Date.now();
+          
           if (errorMessage.toLowerCase().includes("exhausted") || 
               errorMessage.toLowerCase().includes("limit reach") || 
               errorMessage.toLowerCase().includes("daily") || 
               errorMessage.toLowerCase().includes("quota")) {
-             throw new Error("Daily Limit Reached (1,500 reqs): You've hit the Gemini Free Tier daily cap. AI will reset tomorrow. Please check back then!");
+             // Daily limit hits deserve a much longer pause (e.g. 1 hour) before retrying locally
+             this.setCooloffUntil(now + 3600000); 
+             throw new Error("Daily Limit Reached (1,500 reqs): You've hit the Gemini Free Tier daily cap. AI will reset tomorrow. Please check back then or use a different API key.");
           }
+
+          // If we hit a standard 429 RPM error, trigger a 65-second safety pause across ALL TABS
+          this.setCooloffUntil(now + 65000);
           throw new Error(
-            "AI Rate Limit: The free tier is busy. I've activated a 75s 'Safety Pause' to protect your key. Refresh in a minute."
+            "Rate Limit Exceeded: You're calling the AI too fast. I've activated a 65s 'Safety Pause' across all your tabs to protect your free quota. Please wait a minute before retrying."
           );
         }
 

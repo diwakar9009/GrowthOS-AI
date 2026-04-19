@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight, Plus, Calendar as CalendarIcon, PenTool, Wrench, Target, Ear, FileText, IndianRupee, Users, Palette, Search, Layout, Activity, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight, Plus, Calendar as CalendarIcon, PenTool, Wrench, Target, Ear, FileText, IndianRupee, Users, Palette, Search, Layout, Activity, ArrowUpRight, ArrowDownRight, ShieldAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Button } from "./Button";
 import { MOCK_SUGGESTIONS, MOCK_TRENDS } from "@/constants";
@@ -239,24 +239,34 @@ export function Dashboard() {
                   <span>Analyzing your recent activity...</span>
                 </div>
               ) : briefingError ? (
-                <div className="flex flex-col items-center justify-center py-6 text-center space-y-3">
-                  <div className="p-2 rounded-full bg-amber-100 text-amber-600">
-                    <Clock className="h-5 w-5" />
+                <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
+                  <div className="p-3 rounded-full bg-amber-100 text-amber-600 ring-4 ring-amber-50">
+                    <ShieldAlert className="h-6 w-6" />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold">Rate Limit Reached</p>
-                    <p className="text-[10px] text-muted-foreground px-4">The AI is busy. Please wait a moment before retrying.</p>
+                  <div className="space-y-2 px-4">
+                    <h3 className="text-sm font-bold text-amber-900">AI Safety Pause Active</h3>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      To protect your free Gemini quota, the system has temporarily paused AI requests. 
+                      This usually happens if you've reached the 15 requests per minute limit.
+                    </p>
                   </div>
-                  <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => generateBriefing()}>
-                    <Zap className="h-3 w-3 mr-1" />
-                    Retry Now
-                  </Button>
-                  <button 
-                    className="text-[9px] text-muted-foreground underline hover:text-primary mt-1 opacity-50 hover:opacity-100"
-                    onClick={() => { AIService.resetSafetyPause(); setBriefingError(false); }}
-                  >
-                    Advanced: Clear Safety Lock
-                  </button>
+                  <div className="flex flex-col w-full px-8 space-y-2">
+                    <Button variant="default" size="sm" className="w-full bg-amber-600 hover:bg-amber-700 h-9" onClick={() => generateBriefing()}>
+                      <Zap className="h-3 w-3 mr-2" />
+                      Try Analyzing Again
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full h-8 text-[10px] border-amber-200 text-amber-700 hover:bg-amber-50"
+                      onClick={() => { AIService.resetSafetyPause(); setBriefingError(false); }}
+                    >
+                      Override: Force Unlock AI
+                    </Button>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground italic px-6">
+                    Note: If you've reached the 1,500 daily limit, unlocking manually won't work until Google resets your quota tomorrow.
+                  </p>
                 </div>
               ) : briefing ? (
                 <div className="space-y-4">
