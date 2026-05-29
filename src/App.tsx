@@ -24,6 +24,7 @@ import { BrandKit } from "./components/BrandKit";
 import { ClientPortal } from "./components/ClientPortal";
 import { ReportBuilder } from "./components/ReportBuilder";
 import { LandingPage } from "./components/LandingPage";
+import { AIAssistant } from "./components/AIAssistant";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 import { auth, googleProvider, signInWithPopup } from "./lib/firebase";
 import { Loader2, Flame } from "lucide-react";
@@ -101,6 +102,7 @@ function AppContent() {
           <Route path="/reports" element={<ReportBuilder />} />
           <Route path="/portal/:clientId" element={<ClientPortal />} />
           <Route path="/tools" element={<Tools />} />
+          <Route path="/assistant" element={<AIAssistant />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

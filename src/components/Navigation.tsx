@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, TrendingUp, PenTool, Wrench, User, Flame, BarChart3, Briefcase, Calendar as CalendarIcon, Layout, Image, Search, Sparkles, FileText, Users, Palette, FileBarChart } from "lucide-react";
+import { LayoutGrid, TrendingUp, PenTool, Wrench, User, Flame, BarChart3, Briefcase, Calendar as CalendarIcon, Layout, Image, Search, Sparkles, FileText, Users, Palette, FileBarChart, Bot, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navGroups = [
@@ -15,6 +15,7 @@ const navGroups = [
   {
     label: "AI Studio",
     items: [
+      { name: "AI Assistant", href: "/assistant", icon: Bot },
       { name: "AI Content", href: "/ai-content", icon: PenTool },
       { name: "Trends", href: "/trends", icon: TrendingUp },
       { name: "Content SEO", href: "/content-seo", icon: Search },
@@ -42,7 +43,7 @@ export function Navigation() {
   // Key mobile items
   const mobileItems = [
     { name: "Home", href: "/", icon: LayoutGrid },
-    { name: "Content", href: "/ai-content", icon: PenTool },
+    { name: "Assistant", href: "/assistant", icon: Bot },
     { name: "Tools", href: "/tools", icon: Wrench },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Profile", href: "/profile", icon: User },

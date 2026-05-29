@@ -45,7 +45,7 @@ export function SEOGenerator() {
            - Long-tail Keywords
         4. **15-20 Trending Hashtags**: Categorized by reach specifically for ${platform} based on current viral trends.
         5. **Content Strategy Tip**: One actionable tip on how to structure the content for this specific niche and audience to improve ranking NOW.`, {
-          model: "gemini-3.1-pro-preview",
+          model: "gemini-3.5-flash",
           useSearch: true
         });
 

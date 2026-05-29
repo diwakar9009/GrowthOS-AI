@@ -39,10 +39,10 @@ async function startServer() {
     try {
       const ai = new GoogleGenAI({ apiKey });
       
-      console.log(`Starting AI stream for model: ${modelId || "gemini-3-flash-preview"} (Search: ${!!useSearch})`);
+      console.log(`Starting AI stream for model: ${modelId || "gemini-3.5-flash"} (Search: ${!!useSearch})`);
 
       const result = await ai.models.generateContentStream({
-        model: modelId || "gemini-3-flash-preview",
+        model: modelId || "gemini-3.5-flash",
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
           systemInstruction: systemInstruction,

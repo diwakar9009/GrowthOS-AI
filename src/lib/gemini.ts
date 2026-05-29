@@ -21,7 +21,7 @@ import {
  * Interface for AI task generation
  */
 export interface AIGenerationConfig {
-  model?: "gemini-3.1-pro-preview" | "gemini-3-flash-preview";
+  model?: string;
   systemInstruction?: string;
   useSearch?: boolean;
 }
@@ -76,7 +76,7 @@ export class AIService {
 
     return this.executionQueue = this.executionQueue.then(async () => {
       const { 
-        model = "gemini-3-flash-preview", 
+        model = "gemini-3.5-flash", 
         systemInstruction, 
         useSearch = false 
       } = config;

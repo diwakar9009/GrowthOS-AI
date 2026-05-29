@@ -83,7 +83,7 @@ export function ContentOptimizer() {
         - keywords (array of strings)
         
         Content: ${contentToOptimize}`, {
-          model: "gemini-3.1-pro-preview",
+          model: "gemini-3.5-flash",
           useSearch: true
         });
       

@@ -53,7 +53,7 @@ export function Trends() {
         - Why it's trending (use specific real-time data and search results)
         - Call to action (CTA)
         - Strategic insight on why this trend is relevant NOW.`, {
-          model: "gemini-3.1-pro-preview",
+          model: "gemini-3.5-flash",
           useSearch: true
         });
 
@@ -89,7 +89,7 @@ export function Trends() {
       const text = await AIService.generateContent(`As an SEO expert, perform professional search research and generate a list of 10-15 trending and high-volume keywords for the topic: "${keywordTopic}" in the ${niche || "general"} niche. 
         Target Audience: ${audience}
         Using real-time search data, format as JSON with an array of objects: { keyword: string, volume: string, difficulty: 'low' | 'medium' | 'high', trend: 'up' | 'down' | 'stable' }`, {
-          model: "gemini-3.1-pro-preview",
+          model: "gemini-3.5-flash",
           useSearch: true
         });
       

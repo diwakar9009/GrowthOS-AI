@@ -28,7 +28,7 @@ export default async function handler(req: Request) {
     const ai = new GoogleGenAI({ apiKey });
     
     const result = await ai.models.generateContentStream({
-      model: modelId || "gemini-3-flash-preview",
+      model: modelId || "gemini-3.5-flash",
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
         systemInstruction: systemInstruction,

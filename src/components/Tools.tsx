@@ -571,7 +571,7 @@ export function Tools() {
         ].includes(activeTool);
 
         const text = await AIService.generateContent(prompt, {
-          model: NEEDS_SEARCH ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview",
+          model: "gemini-3.5-flash",
           systemInstruction,
           useSearch: NEEDS_SEARCH
         });
