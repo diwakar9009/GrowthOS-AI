@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/lib/ToastContext";
 import { db, collection, query, orderBy, onSnapshot, addDoc, doc, updateDoc, deleteDoc, handleFirestoreError, OperationType } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Button } from "./Button";
@@ -70,6 +71,7 @@ const TEMPLATES = [
 
 export function Projects() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [projects, setProjects] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,6 +139,7 @@ export function Projects() {
       setNewPriority("medium");
       setNewDueDate("");
       setIsAdding(false);
+      showToast("Project Saved: Your new campaign task has been added successfully!", "success");
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}/projects`);
     } finally {
@@ -165,6 +168,7 @@ export function Projects() {
       setShowTemplates(false);
       setNewClientId("");
       setNewDueDate("");
+      showToast(`Template Applied: ${template.name} campaign tasks populated!`, "success");
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}/projects`);
     } finally {

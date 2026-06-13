@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "./Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Input } from "./Input";
-import { User, Settings, LogOut, Flame, Trophy, Zap, LayoutGrid, Loader2 } from "lucide-react";
+import { User, Settings, LogOut, Flame, Trophy, Zap, LayoutGrid, Loader2, Key, ShieldCheck, ArrowRight } from "lucide-react";
 import { NICHES, PLATFORMS } from "@/constants";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
@@ -13,6 +13,36 @@ export function Profile() {
   const [niche, setNiche] = useState(profile?.niche || "General");
   const [platform, setPlatform] = useState(profile?.platform || "both");
   const [saving, setSaving] = useState(false);
+
+  const [profileApiKey, setProfileApiKey] = useState("");
+  const [hasSavedProfileKey, setHasSavedProfileKey] = useState(() => !!localStorage.getItem("growthos_user_gemini_api_key"));
+  const [profileKeyError, setProfileKeyError] = useState("");
+  const [profileKeySuccess, setProfileKeySuccess] = useState(false);
+
+  const handleSaveProfileKey = () => {
+    setProfileKeyError("");
+    setProfileKeySuccess(false);
+    const trimmed = profileApiKey.trim();
+    if (!trimmed) {
+      setProfileKeyError("Please enter a valid API Key.");
+      return;
+    }
+    if (!trimmed.startsWith("AIzaSy")) {
+      setProfileKeyError("Gemini API Keys typically start with 'AIzaSy'. Please verify your key.");
+      return;
+    }
+    localStorage.setItem("growthos_user_gemini_api_key", trimmed);
+    setProfileApiKey("");
+    setHasSavedProfileKey(true);
+    setProfileKeySuccess(true);
+  };
+
+  const handleDeleteProfileKey = () => {
+    localStorage.removeItem("growthos_user_gemini_api_key");
+    setProfileApiKey("");
+    setHasSavedProfileKey(false);
+    setProfileKeySuccess(false);
+  };
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -90,7 +120,8 @@ export function Profile() {
         </div>
 
         {/* Preferences & Settings */}
-        <Card className="md:col-span-2">
+        <div className="md:col-span-2 space-y-6">
+          <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Settings className="h-5 w-5 text-primary" />
@@ -140,7 +171,65 @@ export function Profile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Custom Gemini API Key Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-primary">
+              <Key className="h-5 w-5 animate-pulse" />
+              <span>Custom Gemini API Key</span>
+            </CardTitle>
+            <CardDescription>
+              Bina manual admin approval ke AI features ko unlock karne ya apna khud ka AI usage limit badhane ke liye apna details save karein.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase">Your Gemini Key</label>
+              <div className="flex gap-2.5">
+                <Input
+                  type="password"
+                  value={profileApiKey}
+                  onChange={(e) => setProfileApiKey(e.target.value)}
+                  placeholder={hasSavedProfileKey ? "••••••••••••••••••••••••••••••••••••" : "Paste your Gemini API Key starting with AIzaSy..."}
+                  className="flex-1 bg-background"
+                  disabled={hasSavedProfileKey}
+                />
+                {hasSavedProfileKey ? (
+                  <Button 
+                    variant="outline" 
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                    onClick={handleDeleteProfileKey}
+                  >
+                    Remove Key
+                  </Button>
+                ) : (
+                  <Button onClick={handleSaveProfileKey}>
+                    Save Key
+                  </Button>
+                )}
+              </div>
+              {profileKeyError && <p className="text-xs text-red-500 font-medium">{profileKeyError}</p>}
+              {profileKeySuccess && <p className="text-xs text-emerald-500 font-medium">✨ API Key saved successfully! All AI features are unlocked.</p>}
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t">
+              <span className="flex items-center gap-1.5 font-medium text-foreground">
+                <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                Key strictly browser storage me save rahegi, request secure tunnel se server-side execute hogi.
+              </span>
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline font-semibold flex items-center gap-1"
+              >
+                Get Free API Key <ArrowRight className="h-3 w-3" />
+              </a>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+    </div>
     </div>
   );
 }

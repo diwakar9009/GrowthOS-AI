@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight, Plus, Calendar as CalendarIcon, PenTool, Wrench, Target, Ear, FileText, IndianRupee, Users, Palette, Search, Layout, Activity, ArrowUpRight, ArrowDownRight, ShieldAlert } from "lucide-react";
+import { Flame, Trophy, TrendingUp, Zap, Clock, Briefcase, Sparkles, Loader2, ArrowRight, Plus, Calendar as CalendarIcon, PenTool, Wrench, Target, Ear, FileText, IndianRupee, Users, Palette, Search, Layout, Activity, ArrowUpRight, ArrowDownRight, ShieldAlert, Calculator } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
 import { Button } from "./Button";
 import { MOCK_SUGGESTIONS, MOCK_TRENDS } from "@/constants";
@@ -33,10 +33,10 @@ export function Dashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const quickActions = [
+    { name: "ROI Funnel", icon: Calculator, href: "/simulator", color: "bg-emerald-500 animate-pulse" },
     { name: "New Strategy", icon: Sparkles, href: "/tools?tool=strategy", color: "bg-blue-500" },
     { name: "Competitor", icon: Search, href: "/tools?tool=competitor", color: "bg-orange-500" },
     { name: "Lead Scorer", icon: Target, href: "/tools?tool=lead-scorer", color: "bg-purple-500" },
-    { name: "Brand Kit", icon: Palette, href: "/brand-kit", color: "bg-pink-500" },
   ];
 
   useEffect(() => {

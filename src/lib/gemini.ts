@@ -16,6 +16,7 @@ import {
   Briefcase,
   ShieldAlert
 } from "lucide-react";
+import { auth } from "./firebase";
 
 /**
  * Interface for AI task generation
@@ -101,11 +102,22 @@ export class AIService {
       this.setLastRequestTime(Date.now());
 
       try {
+        const idToken = await auth.currentUser?.getIdToken();
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (idToken) {
+          headers["Authorization"] = `Bearer ${idToken}`;
+        }
+
+        const customApiKey = localStorage.getItem("growthos_user_gemini_api_key");
+        if (customApiKey) {
+          headers["X-User-Gemini-API-Key"] = customApiKey;
+        }
+
         const response = await fetch("/api/ai", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify({
             prompt,
             model,

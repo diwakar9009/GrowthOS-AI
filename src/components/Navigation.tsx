@@ -1,53 +1,70 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, TrendingUp, PenTool, Wrench, User, Flame, BarChart3, Briefcase, Calendar as CalendarIcon, Layout, Image, Search, Sparkles, FileText, Users, Palette, FileBarChart, Bot, MessageSquare } from "lucide-react";
+import { LayoutGrid, TrendingUp, PenTool, Wrench, User, Flame, BarChart3, Briefcase, Calendar as CalendarIcon, Layout, Image, Search, Sparkles, FileText, Users, Palette, FileBarChart, Bot, MessageSquare, ShieldCheck, Sun, Moon, Calculator, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const navGroups = [
-  {
-    label: "Overview",
-    items: [
-      { name: "Dashboard", href: "/", icon: LayoutGrid },
-      { name: "Projects", href: "/projects", icon: Layout },
-      { name: "Clients", href: "/clients", icon: Briefcase },
-      { name: "Calendar", href: "/calendar", icon: CalendarIcon },
-    ]
-  },
-  {
-    label: "AI Studio",
-    items: [
-      { name: "AI Assistant", href: "/assistant", icon: Bot },
-      { name: "AI Content", href: "/ai-content", icon: PenTool },
-      { name: "Trends", href: "/trends", icon: TrendingUp },
-      { name: "Content SEO", href: "/content-seo", icon: Search },
-      { name: "SEO Gen", href: "/seo-generator", icon: Sparkles },
-      { name: "Tools", href: "/tools", icon: Wrench },
-    ]
-  },
-  {
-    label: "Management",
-    items: [
-      { name: "Assets", href: "/assets", icon: Image },
-      { name: "Analytics", href: "/analytics", icon: BarChart3 },
-      { name: "Reports", href: "/reports", icon: FileBarChart },
-      { name: "Invoices", href: "/invoices", icon: FileText },
-      { name: "Team", href: "/team", icon: Users },
-      { name: "Brand Kit", href: "/brand-kit", icon: Palette },
-      { name: "Profile", href: "/profile", icon: User },
-    ]
-  }
-];
+import { useAuth } from "../lib/AuthContext";
+import { useTheme } from "../lib/ThemeContext";
 
 export function Navigation() {
   const location = useLocation();
+  const { isAdmin } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   
   // Key mobile items
   const mobileItems = [
     { name: "Home", href: "/", icon: LayoutGrid },
     { name: "Assistant", href: "/assistant", icon: Bot },
+    { name: "ROI-Sim", href: "/simulator", icon: Calculator },
     { name: "Tools", href: "/tools", icon: Wrench },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Profile", href: "/profile", icon: User },
   ];
+
+  const navGroups = [
+    {
+      label: "Overview",
+      items: [
+        { name: "Dashboard", href: "/", icon: LayoutGrid },
+        { name: "Projects", href: "/projects", icon: Layout },
+        { name: "Clients", href: "/clients", icon: Briefcase },
+        { name: "ROI Simulator", href: "/simulator", icon: Calculator },
+        { name: "Calendar", href: "/calendar", icon: CalendarIcon },
+      ]
+    },
+    {
+      label: "AI Studio",
+      items: [
+        { name: "GrowthSuite Hub", href: "/suite-hub", icon: Layers },
+        { name: "AI Assistant", href: "/assistant", icon: Bot },
+        { name: "AI Content", href: "/ai-content", icon: PenTool },
+        { name: "Idea Generator", href: "/idea-generator", icon: Sparkles },
+        { name: "Trends", href: "/trends", icon: TrendingUp },
+        { name: "Content SEO", href: "/content-seo", icon: Search },
+        { name: "SEO Gen", href: "/seo-generator", icon: Sparkles },
+        { name: "Tools", href: "/tools", icon: Wrench },
+      ]
+    },
+    {
+      label: "Management",
+      items: [
+        { name: "Assets", href: "/assets", icon: Image },
+        { name: "Analytics", href: "/analytics", icon: BarChart3 },
+        { name: "Reports", href: "/reports", icon: FileBarChart },
+        { name: "Invoices", href: "/invoices", icon: FileText },
+        { name: "Team", href: "/team", icon: Users },
+        { name: "Brand Kit", href: "/brand-kit", icon: Palette },
+        { name: "Profile", href: "/profile", icon: User },
+      ]
+    }
+  ];
+
+  const currentNavGroups = [...navGroups];
+  if (isAdmin) {
+    currentNavGroups.push({
+      label: "Admin Console",
+      items: [
+        { name: "Manage Approvals", href: "/admin-users", icon: ShieldCheck }
+      ]
+    });
+  }
 
   return (
     <>
@@ -76,14 +93,23 @@ export function Navigation() {
 
       {/* Desktop Side Nav */}
       <aside className="fixed left-0 top-0 hidden h-screen w-64 flex-col border-r bg-background p-6 md:flex no-print">
-        <div className="mb-8 flex items-center space-x-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-            <Flame className="h-5 w-5" />
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+              <Flame className="h-5 w-5" />
+            </div>
+            <span className="text-xl font-bold tracking-tight">GrowthOS AI</span>
           </div>
-          <span className="text-xl font-bold tracking-tight">GrowthOS AI</span>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-xl bg-secondary text-foreground hover:bg-secondary/80 hover:text-primary transition-all duration-300 shadow-sm cursor-pointer"
+            title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+          >
+            {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          </button>
         </div>
         <nav className="flex flex-1 flex-col space-y-6 overflow-y-auto pr-2 custom-scrollbar">
-          {navGroups.map((group) => (
+          {currentNavGroups.map((group) => (
             <div key={group.label} className="space-y-2">
               <h3 className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-3">
                 {group.label}

@@ -8,6 +8,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./components/Dashboard";
 import { AICaptionGenerator } from "./components/AICaptionGenerator";
+import { ContentIdeaGenerator } from "./components/ContentIdeaGenerator";
 import { Trends } from "./components/Trends";
 import { Analytics } from "./components/Analytics";
 import { ContentOptimizer } from "./components/ContentOptimizer";
@@ -15,6 +16,8 @@ import { SEOGenerator } from "./components/SEOGenerator";
 import { Clients } from "./components/Clients";
 import { Calendar } from "./components/Calendar";
 import { Tools } from "./components/Tools";
+import { SuiteHub } from "./components/SuiteHub";
+import { MarketingSimulator } from "./components/MarketingSimulator";
 import { Profile } from "./components/Profile";
 import { Projects } from "./components/Projects";
 import { Assets } from "./components/Assets";
@@ -25,7 +28,11 @@ import { ClientPortal } from "./components/ClientPortal";
 import { ReportBuilder } from "./components/ReportBuilder";
 import { LandingPage } from "./components/LandingPage";
 import { AIAssistant } from "./components/AIAssistant";
+import { AdminUsers } from "./components/AdminUsers";
+import { ApprovalPendingGuard } from "./components/ApprovalPendingGuard";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
+import { ThemeProvider } from "./lib/ThemeContext";
+import { ToastProvider } from "./lib/ToastContext";
 import { auth, googleProvider, signInWithPopup } from "./lib/firebase";
 import { Loader2, Flame } from "lucide-react";
 import { motion } from "motion/react";
@@ -90,19 +97,23 @@ function AppContent() {
           <Route path="/projects" element={<Projects />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/calendar" element={<Calendar />} />
-          <Route path="/ai-content" element={<AICaptionGenerator />} />
-          <Route path="/trends" element={<Trends />} />
+          <Route path="/ai-content" element={<ApprovalPendingGuard><AICaptionGenerator /></ApprovalPendingGuard>} />
+          <Route path="/idea-generator" element={<ApprovalPendingGuard><ContentIdeaGenerator /></ApprovalPendingGuard>} />
+          <Route path="/trends" element={<ApprovalPendingGuard><Trends /></ApprovalPendingGuard>} />
           <Route path="/assets" element={<Assets />} />
           <Route path="/analytics" element={<Analytics />} />
-          <Route path="/content-seo" element={<ContentOptimizer />} />
-          <Route path="/seo-generator" element={<SEOGenerator />} />
+          <Route path="/content-seo" element={<ApprovalPendingGuard><ContentOptimizer /></ApprovalPendingGuard>} />
+          <Route path="/seo-generator" element={<ApprovalPendingGuard><SEOGenerator /></ApprovalPendingGuard>} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/team" element={<Team />} />
           <Route path="/brand-kit" element={<BrandKit />} />
           <Route path="/reports" element={<ReportBuilder />} />
           <Route path="/portal/:clientId" element={<ClientPortal />} />
-          <Route path="/tools" element={<Tools />} />
-          <Route path="/assistant" element={<AIAssistant />} />
+          <Route path="/tools" element={<ApprovalPendingGuard><Tools /></ApprovalPendingGuard>} />
+          <Route path="/suite-hub" element={<ApprovalPendingGuard><SuiteHub /></ApprovalPendingGuard>} />
+          <Route path="/simulator" element={<ApprovalPendingGuard><MarketingSimulator /></ApprovalPendingGuard>} />
+          <Route path="/assistant" element={<ApprovalPendingGuard><AIAssistant /></ApprovalPendingGuard>} />
+          <Route path="/admin-users" element={<AdminUsers />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -113,8 +124,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

@@ -44,12 +44,16 @@ service cloud.firestore {
     // 2. Validation Blueprints (Pillar 2)
     // ===============================================================
     
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == "diwakarvishwakarma9009@gmail.com";
+    }
+
     function isValidUser(data) {
       let requiredFields = ['uid', 'email', 'streak', 'points', 'createdAt'];
-      let allowedFields = ['uid', 'email', 'displayName', 'photoURL', 'niche', 'platform', 'streak', 'lastActive', 'points', 'createdAt'];
+      let allowedFields = ['uid', 'email', 'displayName', 'photoURL', 'niche', 'platform', 'streak', 'lastActive', 'points', 'createdAt', 'isApproved', 'role'];
       return data.keys().hasAll(requiredFields) &&
              data.keys().size() <= allowedFields.size() &&
-             data.uid == request.auth.uid &&
+             (data.uid == request.auth.uid || isAdmin()) &&
              isValidEmail(data.email) &&
              data.streak is number && data.streak >= 0 &&
              data.points is number && data.points >= 0 &&
@@ -62,7 +66,7 @@ service cloud.firestore {
       return data.keys().hasAll(requiredFields) &&
              data.keys().size() <= allowedFields.size() &&
              data.userId == userId &&
-             data.userId == request.auth.uid &&
+             (data.userId == request.auth.uid || isAdmin()) &&
              data.type in ['caption', 'trend', 'suggestion', 'tool'] &&
              data.title is string && data.title.size() <= 500 &&
              data.createdAt is string && data.createdAt.size() <= 64;
@@ -74,7 +78,7 @@ service cloud.firestore {
       return data.keys().hasAll(requiredFields) &&
              data.keys().size() <= allowedFields.size() &&
              data.userId == userId &&
-             data.userId == request.auth.uid &&
+             (data.userId == request.auth.uid || isAdmin()) &&
              data.status in ['active', 'on-hold', 'completed'] &&
              data.name is string && data.name.size() <= 100 &&
              data.createdAt is string && data.createdAt.size() <= 64;
@@ -85,12 +89,13 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      allow get: if isOwner(userId) && isValidId(userId);
-      allow list: if isOwner(userId) && isValidId(userId) && resource.data.uid == request.auth.uid;
+      allow get: if (isOwner(userId) && isValidId(userId)) || isAdmin();
+      allow list: if (isOwner(userId) && isValidId(userId) && resource.data.uid == request.auth.uid) || isAdmin();
       
       allow create: if isVerified() && isOwner(userId) && isValidUser(incoming());
-      allow update: if isVerified() && isOwner(userId) && isValidUser(incoming()) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'niche', 'platform', 'streak', 'lastActive', 'points', 'createdAt'])
+      allow update: if isVerified() && (
+        (isOwner(userId) && isValidUser(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'niche', 'platform', 'streak', 'lastActive', 'points', 'createdAt'])) ||
+        (isAdmin() && isValidUser(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['isApproved', 'role', 'displayName', 'photoURL', 'niche', 'platform', 'streak', 'lastActive', 'points', 'createdAt']))
       );
 
       match /tasks/{taskId} {

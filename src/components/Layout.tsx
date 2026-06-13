@@ -1,9 +1,11 @@
 import { ReactNode, useState } from "react";
 import { Navigation } from "./Navigation";
-import { Flame, Menu, X, LayoutGrid, TrendingUp, PenTool, Wrench, User, BarChart3, Briefcase, Calendar as CalendarIcon, Layout as LayoutIcon, Image, Search, Sparkles, FileText, Users, Palette } from "lucide-react";
+import { Flame, Menu, X, LayoutGrid, TrendingUp, PenTool, Wrench, User, BarChart3, Briefcase, Calendar as CalendarIcon, Layout as LayoutIcon, Image, Search, Sparkles, FileText, Users, Palette, Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useTheme } from "../lib/ThemeContext";
+import { CommandBar } from "./CommandBar";
 
 interface LayoutProps {
   children: ReactNode;
@@ -23,6 +25,7 @@ const navGroups = [
     label: "AI Studio",
     items: [
       { name: "AI Content", href: "/ai-content", icon: PenTool },
+      { name: "Idea Generator", href: "/idea-generator", icon: Sparkles },
       { name: "Trends", href: "/trends", icon: TrendingUp },
       { name: "Content SEO", href: "/content-seo", icon: Search },
       { name: "SEO Gen", href: "/seo-generator", icon: Sparkles },
@@ -45,6 +48,7 @@ const navGroups = [
 export function Layout({ children }: LayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,19 +57,45 @@ export function Layout({ children }: LayoutProps) {
       </div>
       
       {/* Mobile Top Header */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background px-6 md:hidden no-print">
-        <div className="flex items-center space-x-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Flame className="h-5 w-5" />
+      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background px-4 md:hidden no-print gap-2">
+        <div className="flex items-center space-x-1.5 shrink-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Flame className="h-4 w-4" />
           </div>
-          <span className="text-xl font-bold tracking-tight">GrowthOS AI</span>
+          <span className="text-xs font-extrabold tracking-tight">GrowthOS</span>
         </div>
-        <button 
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
-        >
-          {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        
+        <div className="flex-1 max-w-[150px]">
+          <CommandBar />
+        </div>
+
+        <div className="flex items-center space-x-1 shrink-0">
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded-xl bg-secondary text-foreground hover:bg-secondary/80 hover:text-primary transition-all duration-300 shadow-sm cursor-pointer"
+            title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+          >
+            {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          </button>
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+          >
+            {isMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
+        </div>
+      </header>
+
+      {/* Desktop Top Header */}
+      <header className="sticky top-0 z-30 hidden md:flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-md px-8 ml-64 no-print shadow-sm">
+        <div className="flex items-center space-x-4">
+          <CommandBar />
+        </div>
+        <div className="flex items-center space-x-3 text-xs font-semibold text-muted-foreground mr-2">
+          <span>GrowthOS Pro Command Center</span>
+          <span className="h-4 w-px bg-border" />
+          <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-[10px] tracking-wider uppercase font-extrabold animate-pulse">Active</span>
+        </div>
       </header>
 
       {/* Mobile Menu Overlay */}

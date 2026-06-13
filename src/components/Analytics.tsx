@@ -56,10 +56,12 @@ import {
   ShieldCheck,
   BarChart3,
   Plus,
-  FileBarChart
+  FileBarChart,
+  Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/lib/ToastContext";
 import { db, collection, query, onSnapshot } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
@@ -141,6 +143,7 @@ const ShareActions = ({ title }: { title: string }) => {
 
 export function Analytics() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [counts, setCounts] = useState({
     clients: 0,
     projects: 0,
@@ -250,6 +253,66 @@ export function Analytics() {
   };
 
   const recommendations = getRecommendations();
+
+  const handleDownloadCSV = () => {
+    // Collect active filters information
+    const clientHeader = selectedClients.includes("all") ? "All Clients" : selectedClients.join("; ");
+    const projectHeader = selectedProjectId === "all" ? "All Campaigns" : (projects.find(p => p.id === selectedProjectId)?.title || "Campaign");
+    const rangeHeader = dateRange === "24h" ? "Last 24 Hours" : dateRange === "7d" ? "Last 7 Days" : dateRange === "30d" ? "Last 30 Days" : "Last 90 Days";
+
+    // Summary Metrics
+    const lastData = currentGrowthData[currentGrowthData.length - 1];
+    const totalReach = lastData ? lastData.reach : 0;
+    const engagement = lastData ? lastData.engagement : 0;
+    const conversionRate = lastData ? lastData.conversionRate : 0;
+    const cpa = 1000 + (totalReach % 500);
+    const roas = (4 + (conversionRate / 2)).toFixed(1);
+    const cac = 850 + (totalReach % 300);
+
+    // Build CSV Content
+    let csvRows = [];
+    
+    // Title & Metadata
+    csvRows.push("GrowthOS AI - Campaign Performance Metrics Export");
+    csvRows.push(`Generated At,${new Date().toLocaleString()}`);
+    csvRows.push(`Selected Clients,"${clientHeader.replace(/"/g, '""')}"`);
+    csvRows.push(`Campaign/Project,"${projectHeader.replace(/"/g, '""')}"`);
+    csvRows.push(`Date Range,${rangeHeader}`);
+    csvRows.push("");
+
+    // Summary Performance Section
+    csvRows.push("SUMMARY METRICS");
+    csvRows.push("Metric,Value");
+    csvRows.push(`Campaign Health Score,${getHealthScore()}%`);
+    csvRows.push(`Total Reach,${totalReach}`);
+    csvRows.push(`Engagement,${engagement}`);
+    csvRows.push(`Conversion Rate,${conversionRate}%`);
+    csvRows.push(`CPA (Cost per Acquisition),INR ${cpa}`);
+    csvRows.push(`ROAS (Return on Ad Spend),${roas}x`);
+    csvRows.push(`CAC (Customer Acquisition Cost),INR ${cac}`);
+    csvRows.push("");
+
+    // Detail Performance Breakdown Section
+    csvRows.push("TREND PERFORMANCE BREAKDOWN");
+    csvRows.push("Time/Label,Reach,Engagement,Followers,Conversion Rate (%)");
+    
+    currentGrowthData.forEach(row => {
+      csvRows.push(`"${row.name}",${row.reach},${row.engagement},${row.followers},${row.conversionRate}`);
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const safeFilename = `campaign_performance_${dateRange}_${projectHeader.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.csv`;
+    link.setAttribute("download", safeFilename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast("CSV Exported: Campaign performance metrics downloaded successfully!", "success");
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -525,8 +588,14 @@ export function Analytics() {
               </>
             )}
           </div>
-          <Button variant="outline" size="sm">
-            Export
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleDownloadCSV}
+            className="flex items-center space-x-2 h-9 border-primary/20 hover:bg-primary/5"
+          >
+            <Download className="h-4 w-4 text-primary" />
+            <span>Download CSV</span>
           </Button>
         </div>
       </div>

@@ -9,6 +9,8 @@ export interface UserProfile {
   lastActive?: string;
   points: number;
   createdAt: string;
+  isApproved?: boolean;
+  role?: 'admin' | 'user';
 }
 
 export interface MarketingTask {

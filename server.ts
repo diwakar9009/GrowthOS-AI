@@ -8,26 +8,136 @@ import cors from "cors";
 
 dotenv.config();
 
+// Standard resilient production process handlers
+process.on("uncaughtException", (err) => {
+  console.error("Resilient Server: Uncaught Exception caught:", err);
+});
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Resilient Server: Unhandled Rejection at:", promise, "reason:", reason);
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Helper to verify Firebase ID Token and check Firestore approval status
+async function verifyUserApproval(authHeader?: string): Promise<{ uid: string; email: string; isApproved: boolean }> {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw new Error("Unauthorized: Missing or invalid authentication token format.");
+  }
+
+  const idToken = authHeader.substring(7);
+  const firebaseApiKey = "AIzaSyBhsQdR73dG9cyzKgnHay1LyklYx59_Rqo";
+
+  // 1. Verify token with Google's Identity Toolkit API
+  const lookupUrl = `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseApiKey}`;
+  const verifyRes = await fetch(lookupUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken })
+  });
+
+  if (!verifyRes.ok) {
+    throw new Error("Unauthorized: Invalid, expired, or corrupted session token. Please re-login.");
+  }
+
+  const data = await verifyRes.json();
+  if (!data.users || data.users.length === 0) {
+    throw new Error("Unauthorized: User profile not found in directory.");
+  }
+
+  const user = data.users[0];
+  const uid = user.localId;
+  const email = user.email;
+
+  // Root creator is always approved
+  if (email === "diwakarvishwakarma9009@gmail.com") {
+    return { uid, email, isApproved: true };
+  }
+
+  // 2. Query Firestore via Google REST APIs to retrieve the user's specific registration record
+  const projectId = "gen-lang-client-0000812465";
+  const databaseId = "ai-studio-fa9cb849-d36c-40ae-b748-05e4aab7e40f";
+  const docUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${databaseId}/documents/users/${uid}`;
+
+  const docRes = await fetch(docUrl, {
+    headers: {
+      "Authorization": `Bearer ${idToken}`
+    }
+  });
+
+  if (!docRes.ok) {
+    throw new Error("Forbidden: User profile is missing or you don't have reading privileges.");
+  }
+
+  const docData = await docRes.json();
+  const fields = docData.fields || {};
+  const isApproved = fields.isApproved?.booleanValue === true;
+
+  return { uid, email, isApproved };
+}
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  app.disable("x-powered-by");
+
+  // Global HTTP Security Headers Middleware
+  app.use((req, res, next) => {
+    // Clickjacking, Content Sniffing and XSS injection defense
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://*.google.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com 'unsafe-hashes'; " +
+      "font-src 'self' https://fonts.gstatic.com; " +
+      "img-src 'self' data: https://*.googleusercontent.com https://images.unsplash.com referrer; " +
+      "connect-src 'self' ws: wss: * https://*.googleapis.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; " +
+      "frame-ancestors 'self' https://*.google.com https://ai.studio https://*.run.app https://localhost:* http://localhost:*"
+    );
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    if (process.env.NODE_ENV === "production") {
+      res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    }
+    next();
+  });
 
   app.use(cors());
   app.use(express.json());
 
   // API Routes
   app.post("/api/ai", async (req, res) => {
+    const userApiKey = req.headers["x-user-gemini-api-key"] as string | undefined;
+
+    // 1. Authorization & Token validation
+    try {
+      if (!userApiKey) {
+        const authHeader = req.headers.authorization;
+        const { email, isApproved } = await verifyUserApproval(authHeader);
+        
+        if (!isApproved) {
+          return res.status(403).json({
+            error: "Access Pending: Your GrowthOS AI features access requires manual approval by the site administrator diwakarvishwakarma9009@gmail.com."
+          });
+        }
+      }
+    } catch (authError: any) {
+      console.error("API Authentication Gate Triggered:", authError.message);
+      return res.status(401).json({
+        error: authError.message || "Unauthorized: Valid credentials required to access GrowthOS AI endpoints."
+      });
+    }
+
     const { prompt, model: modelId, systemInstruction, useSearch } = req.body;
     
     // Check key
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = userApiKey || process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey === 'undefined') {
       console.error("GEMINI_API_KEY is missing in server environment.");
-      return res.status(500).json({ 
-        error: "GEMINI_API_KEY is not configured on the server. Please add it to your environment variables." 
+      return res.status(400).json({ 
+        error: "GEMINI_API_KEY is not configured on the server and no custom user key was provided. Please add it to your environment variables or provide your own key." 
       });
     }
 

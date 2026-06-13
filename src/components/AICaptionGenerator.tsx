@@ -7,10 +7,12 @@ import { Sparkles, Copy, Check, Loader2, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/lib/ToastContext";
 import { db, collection, addDoc, handleFirestoreError, OperationType, query, orderBy, onSnapshot } from "@/lib/firebase";
 
 export function AICaptionGenerator() {
   const { profile, user } = useAuth();
+  const { showToast } = useToast();
   const [topic, setTopic] = useState("");
   const [client, setClient] = useState("");
   const [clientId, setClientId] = useState("");
@@ -55,6 +57,7 @@ export function AICaptionGenerator() {
         Format the output clearly using Markdown headers.`);
 
       setResult(text);
+      showToast("AI Content Generated: Caption package generated and saved to history!", "success");
 
       // Save to Firestore history
       try {

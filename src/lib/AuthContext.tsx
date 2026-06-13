@@ -7,6 +7,8 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   isAuthReady: boolean;
+  isApproved: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -14,6 +16,8 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   isAuthReady: false,
+  isApproved: false,
+  isAdmin: false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -23,6 +27,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthReady, setIsAuthReady] = useState(false);
+
+  // Derived authorization statuses
+  const isApproved = profile?.isApproved === true || profile?.email === 'diwakarvishwakarma9009@gmail.com';
+  const isAdmin = profile?.role === 'admin' || profile?.email === 'diwakarvishwakarma9009@gmail.com';
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
@@ -36,6 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const userDoc = await getDoc(userDocRef);
           if (!userDoc.exists()) {
+            const isCreatorAdmin = currentUser.email === 'diwakarvishwakarma9009@gmail.com';
             const newProfile: UserProfile = {
               uid: currentUser.uid,
               email: currentUser.email || '',
@@ -46,6 +55,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               createdAt: new Date().toISOString(),
               niche: 'General',
               platform: 'both',
+              isApproved: isCreatorAdmin,
+              role: isCreatorAdmin ? 'admin' : 'user',
             };
             await setDoc(userDocRef, newProfile);
             setProfile(newProfile);
@@ -77,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAuthReady }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAuthReady, isApproved, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
