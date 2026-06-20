@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import cors from "cors";
+import { rateLimit } from "express-rate-limit";
 
 dotenv.config();
 
@@ -107,6 +108,16 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
+  // Setup robust DDoS in-depth security rate limiting for all API endpoints
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 150, // Limit each IP address to 150 requests per window
+    standardHeaders: true, // Use standard headers for rate limit info
+    legacyHeaders: false, // Turn off old headers
+    message: { error: "Too many requests from this IP address, please try again in 15 minutes." }
+  });
+  app.use("/api/", apiLimiter);
+
   // API Routes
   app.post("/api/ai", async (req, res) => {
     const userApiKey = req.headers["x-user-gemini-api-key"] as string | undefined;
@@ -131,6 +142,20 @@ async function startServer() {
     }
 
     const { prompt, model: modelId, systemInstruction, useSearch } = req.body;
+
+    // Rigorous security validation of inputs to prevent buffer overload or injection attacks
+    if (!prompt || typeof prompt !== "string" || prompt.trim() === "") {
+      return res.status(400).json({ error: "Invalid input: Positive non-empty string prompt is required." });
+    }
+    if (prompt.length > 30000) {
+      return res.status(400).json({ error: "Invalid input: Prompt is too long (must be under 30,000 characters)." });
+    }
+    if (systemInstruction !== undefined && (typeof systemInstruction !== "string" || systemInstruction.length > 5000)) {
+      return res.status(400).json({ error: "Invalid input: systemInstruction must be a string under 5,000 characters." });
+    }
+    if (modelId !== undefined && (typeof modelId !== "string" || modelId.length > 100)) {
+      return res.status(400).json({ error: "Invalid input: model ID must be a string under 100 characters." });
+    }
     
     // Check key
     const apiKey = userApiKey || process.env.GEMINI_API_KEY;
@@ -174,14 +199,25 @@ async function startServer() {
     } catch (error: any) {
       console.error("AI Server Error:", error);
       
+      let errMsg = error.message || "An unexpected error occurred during AI generation.";
+      if (
+        errMsg.includes("API key expired") || 
+        errMsg.includes("API_KEY_INVALID") || 
+        errMsg.includes("expired") || 
+        errMsg.includes("renew the API key") ||
+        errMsg.includes("INVALID_ARGUMENT")
+      ) {
+        errMsg = "The Gemini API Key has expired or is invalid. Please go to Google AI Studio, open 'Settings > Secrets' in the top-right corner, and renew or replace your GEMINI_API_KEY secret.";
+      }
+      
       // If headers haven't been sent yet, we can send a 500
       if (!res.headersSent) {
         return res.status(500).json({ 
-          error: error.message || "An unexpected error occurred during AI generation." 
+          error: errMsg
         });
       } else {
         // If we already started streaming, we just end the stream with the error info
-        res.write(`\n\n[ERROR: ${error.message || "Connection lost during streaming"}]`);
+        res.write(`\n\n[ERROR: ${errMsg}]`);
         res.end();
       }
     }

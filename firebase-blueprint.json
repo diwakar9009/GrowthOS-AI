@@ -77,6 +77,44 @@
             "createdAt": { "type": "string", "format": "date-time" }
         },
         "required": ["userId", "name", "type", "url", "createdAt"]
+    },
+    "SuiteHubGAEvent": {
+      "title": "SuiteHub GA Event",
+      "description": "A Google Analytics simulated real-time telemetry event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "url": { "type": "string" },
+        "country": { "type": "string" },
+        "time": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "url", "country", "time", "status", "createdAt"]
+    },
+    "SuiteHubPixel": {
+      "title": "SuiteHub Pixel",
+      "description": "An installed tracking pixel container",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "createdAt"]
+    },
+    "SuiteHubBrevoChat": {
+      "title": "SuiteHub Brevo Chat Message",
+      "description": "A message in the Brevo live customer chat inbox",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sender": { "type": "string", "enum": ["customer", "agent"] },
+        "text": { "type": "string" },
+        "time": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sender", "text", "time", "createdAt"]
     }
   },
   "firestore": {
@@ -99,6 +137,18 @@
     "/users/{userId}/assets/{assetId}": {
       "schema": "Asset",
       "description": "Brand assets"
+    },
+    "/users/{userId}/suitehub_ga_events/{eventId}": {
+      "schema": "SuiteHubGAEvent",
+      "description": "Google Analytics telemetry events"
+    },
+    "/users/{userId}/suitehub_pixels/{pixelId}": {
+      "schema": "SuiteHubPixel",
+      "description": "Installed third-party tracking pixels"
+    },
+    "/users/{userId}/suitehub_brevo_chats/{chatId}": {
+      "schema": "SuiteHubBrevoChat",
+      "description": "Brevo inbox live chat interactions"
     }
   }
 }

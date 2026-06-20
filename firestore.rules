@@ -90,7 +90,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if (isOwner(userId) && isValidId(userId)) || isAdmin();
-      allow list: if (isOwner(userId) && isValidId(userId) && resource.data.uid == request.auth.uid) || isAdmin();
+      allow list: if isAdmin();
       
       allow create: if isVerified() && isOwner(userId) && isValidUser(incoming());
       allow update: if isVerified() && (

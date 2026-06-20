@@ -155,6 +155,18 @@ export class AIService {
         
         const errorMessage = error.message || "";
         
+        if (
+          errorMessage.includes("API key expired") || 
+          errorMessage.includes("API_KEY_INVALID") || 
+          errorMessage.includes("expired") || 
+          errorMessage.includes("renew the API key") ||
+          errorMessage.includes("INVALID_ARGUMENT")
+        ) {
+          throw new Error(
+            "The Gemini API Key has expired or is invalid. Please go to Google AI Studio, open 'Settings > Secrets' in the top-right corner, and renew or replace your GEMINI_API_KEY secret."
+          );
+        }
+
         if (errorMessage.includes("quota") || errorMessage.includes("429") || errorMessage.includes("limit")) {
           const now = Date.now();
           this.setCooloffUntil(now + 30000); // Reduced to 30s for better UX

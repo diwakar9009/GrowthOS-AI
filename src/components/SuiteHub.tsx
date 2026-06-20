@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { db, collection, addDoc, query, orderBy, onSnapshot, handleFirestoreError, OperationType } from "@/lib/firebase";
+import { db, collection, addDoc, query, orderBy, onSnapshot, handleFirestoreError, OperationType, doc, updateDoc, deleteDoc, setDoc } from "@/lib/firebase";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/lib/ToastContext";
 import { AIService } from "@/lib/gemini";
@@ -116,18 +116,40 @@ export function SuiteHub() {
   const hubspotFileRef = useRef<HTMLInputElement>(null);
 
   const importHubspotCRM = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) {
+      showToast("Please log in first before importing backups.", "error");
+      return;
+    }
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const payload = JSON.parse(e.target?.result as string);
         if (payload && Array.isArray(payload.contacts)) {
-          saveContactsData(payload.contacts);
-          if (payload.contactNotes && typeof payload.contactNotes === "object") {
-            saveNotesData(payload.contactNotes);
+          // Push imported contacts to Firestore real-time collection
+          for (const item of payload.contacts) {
+            await addDoc(collection(db, `users/${user.uid}/suitehub_contacts`), {
+              name: item.name || "Unnamed Contact",
+              email: item.email || "no-email@example.com",
+              company: item.company || "Independent",
+              stage: item.stage || "Lead",
+              value: Number(item.value || 0),
+              score: Number(item.score || 50),
+              createdAt: new Date().toISOString()
+            });
           }
-          showToast(`Successfully restored ${payload.contacts.length} CRM contacts!`, "success");
+
+          // Push contact notes if they are present in JSON
+          if (payload.contactNotes && typeof payload.contactNotes === "object") {
+            for (const [cid, notes] of Object.entries(payload.contactNotes)) {
+              await setDoc(doc(db, `users/${user.uid}/suitehub_contact_notes`, cid), {
+                notes: Array.isArray(notes) ? notes : []
+              });
+            }
+          }
+
+          showToast(`Successfully restored ${payload.contacts.length} CRM contacts to Cloud database!`, "success");
         } else {
           showToast("Invalid JSON schema. Backup template must contain contacts.", "error");
         }
@@ -147,8 +169,63 @@ export function SuiteHub() {
   // Google Analytics Active Live Event Interval Simulation state
   const [isGaLiveSimulating, setIsGaLiveSimulating] = useState(false);
 
+  interface GaEvent {
+    id: string | number;
+    type: string;
+    url: string;
+    country: string;
+    time: string;
+    status: string;
+    createdAt?: string;
+  }
+  const [gaMockEvents, setGaMockEvents] = useState<GaEvent[]>([]);
+
+  const [trackedPixelName, setTrackedPixelName] = useState("");
+  const [installedPixels, setInstalledPixels] = useState<string[]>([]);
+
+  const installPixel = async () => {
+    if (!trackedPixelName.trim()) {
+      showToast("Please enter a pixel container or ID.", "info");
+      return;
+    }
+    if (!user) {
+      showToast("Please log in first to save pixels.", "error");
+      return;
+    }
+    try {
+      await addDoc(collection(db, `users/${user.uid}/suitehub_pixels`), {
+        name: trackedPixelName.trim(),
+        createdAt: new Date().toISOString()
+      });
+      setTrackedPixelName("");
+      showToast("Analytics pixel installed successfully into DOM wrapper!", "success");
+    } catch (err) {
+      showToast("Failed to save pixel.", "error");
+    }
+  };
+
+  const dispatchGaEvent = async (triggerName: string) => {
+    if (!user) {
+      showToast("Please log in first before triggering telemetry.", "error");
+      return;
+    }
+    try {
+      await addDoc(collection(db, `users/${user.uid}/suitehub_ga_events`), {
+        type: triggerName,
+        url: "/dashboard",
+        country: "Local Sandbox",
+        time: "Just now",
+        status: "success",
+        createdAt: new Date().toISOString()
+      });
+      showToast(`GA Protocol fired: ${triggerName}`, "success");
+    } catch (err) {
+      showToast("Failed to fire GA event.", "error");
+    }
+  };
+
   useEffect(() => {
-    if (!isGaLiveSimulating) return;
+    if (!isGaLiveSimulating || !user) return;
     const simulationEvents = [
       "Cart Item Appended", 
       "Whitepaper Downloaded", 
@@ -157,26 +234,33 @@ export function SuiteHub() {
       "Transactional Email Opened", 
       "Custom Filter Applied"
     ];
-    const simulationInterval = setInterval(() => {
+    const simulationInterval = setInterval(async () => {
       const chosenType = simulationEvents[Math.floor(Math.random() * simulationEvents.length)];
       const randomGeo = ["France", "Japan", "Australia", "Canada", "Singapore", "Dubai", "United States", "India", "Germany"][Math.floor(Math.random() * 9)];
       const randomUrls = ["/dashboard", "/register", "/upgrade", "/cart", "/about-us", "/features/seo", "/pricing"];
-      const generatedEvent = {
-        id: Date.now(),
-        type: chosenType,
-        url: randomUrls[Math.floor(Math.random() * randomUrls.length)],
-        country: randomGeo,
-        time: "Just now",
-        status: "success"
-      };
-      setGaMockEvents(prev => [generatedEvent, ...prev].slice(0, 10));
+      try {
+        await addDoc(collection(db, `users/${user.uid}/suitehub_ga_events`), {
+          type: chosenType,
+          url: randomUrls[Math.floor(Math.random() * randomUrls.length)],
+          country: randomGeo,
+          time: "Just now",
+          status: "success",
+          createdAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error("Simulation error", err);
+      }
     }, 5000);
 
     return () => clearInterval(simulationInterval);
-  }, [isGaLiveSimulating]);
+  }, [isGaLiveSimulating, user]);
 
   // Bulk Import Mailchimp
-  const bulkImportSubscribers = () => {
+  const bulkImportSubscribers = async () => {
+    if (!user) {
+      showToast("Please log in first before importing subscribers.", "error");
+      return;
+    }
     if (!bulkSubInput.trim()) {
       showToast("Please enter email addresses first.", "error");
       return;
@@ -186,73 +270,438 @@ export function SuiteHub() {
       showToast("No valid emails detected. Use commas or lines.", "error");
       return;
     }
-    const newSubsList: MailchimpSubscriber[] = extractedEmails.map((email, idx) => {
-      const defaultName = email.split("@")[0].split(/[._-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
-      return {
-        id: (Date.now() + idx).toString(),
-        name: defaultName,
-        email,
-        status: "Subscribed",
-        signupDate: new Date().toISOString().split("T")[0]
-      };
-    });
-    const updated = [...newSubsList, ...subscribers];
-    saveSubscribers(updated);
-    setBulkSubInput("");
-    setShowBulkSub(false);
-    showToast(`Successfully imported ${newSubsList.length} bulk subscribers!`, "success");
+    
+    try {
+      for (const email of extractedEmails) {
+        const defaultName = email.split("@")[0].split(/[._-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+        await addDoc(collection(db, `users/${user.uid}/suitehub_subscribers`), {
+          name: defaultName,
+          email,
+          status: "Subscribed",
+          signupDate: new Date().toISOString().split("T")[0],
+          createdAt: new Date().toISOString()
+        });
+      }
+      setBulkSubInput("");
+      setShowBulkSub(false);
+      showToast(`Successfully imported ${extractedEmails.length} bulk subscribers to cloud index!`, "success");
+    } catch (err) {
+      showToast("Failed to bulk import subscribers", "error");
+    }
   };
 
-  // 1. HubSpot States
-  // 1. HubSpot States with local storage integration and backup export
-  const [contacts, setContacts] = useState<Contact[]>(() => {
-    const saved = localStorage.getItem("growthos_suitehub_contacts");
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return [
-      { id: "1", name: "Aarav Mehta", email: "aarav@mehtatech.com", company: "Mehta Technologies", stage: "Lead", value: 45000, score: 85 },
-      { id: "2", name: "Emily Watson", email: "emily@watsonretail.co.uk", company: "Watson Retail", stage: "Contacted", value: 120000, score: 62 },
-      { id: "3", name: "Vikram Malhotra", email: "v.malhotra@indialogistics.in", company: "India Logistics", stage: "Qualified", value: 350000, score: 91 },
-      { id: "4", name: "Sophie Dubois", email: "s.dubois@luxebrand.fr", company: "Luxe Brands Corp", stage: "Proposal", value: 500000, score: 48 },
-    ];
-  });
+  // 1. HubSpot States & Firestore synchronizations
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contactNotes, setContactNotes] = useState<{ [id: string]: string[] }>({});
 
-  const [contactNotes, setContactNotes] = useState<{ [id: string]: string[] }>(() => {
-    const saved = localStorage.getItem("growthos_suitehub_contact_notes");
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return {
-      "1": ["Discovered via LinkedIn outreach.", "Scheduled introductory call for next Tuesday."],
-      "2": ["Interested in e-commerce migration services.", "Needs detailed proposal on custom Shopify theme development."],
-      "3": ["Enterprise-level logistics firm.", "In negotiations with CEO regarding CRM integrations."],
-      "4": ["High end luxury brand expansion.", "Reviewing proposal stages on multi-channel ad plans."],
-    };
-  });
+  // 2. SEMrush SEO Keyword Gap states & persistent watchlist
+  const [semUrl, setSemUrl] = useState("");
+  const [semCompUrl, setSemCompUrl] = useState("");
+  const [semNiche, setSemNiche] = useState("Technology");
+  const [semResult, setSemResult] = useState<string | null>(null);
 
+  interface TrackedKeyword {
+    id: string;
+    keyword: string;
+    volume: number;
+    difficulty: number;
+    status: "To Write" | "In Progress" | "Optimized" | "Ranking #1";
+  }
+  const [trackedKeywords, setTrackedKeywords] = useState<TrackedKeyword[]>([]);
+
+  // 3. Ahrefs States & persistent backlink outreach CRM
+  const [ahrefsUrl, setAhrefsUrl] = useState("");
+  const [ahrefsResult, setAhrefsResult] = useState<string | null>(null);
+
+  interface OutreachTarget {
+    id: string;
+    domain: string;
+    score: number;
+    contact: string;
+    status: "Uncontacted" | "Pitch Sent" | "Negotiating" | "Link Live";
+  }
+  const [outreachTargets, setOutreachTargets] = useState<OutreachTarget[]>([]);
+
+  // 4. Hootsuite Scheduler States & AI Generator
+  const [socialFeed, setSocialFeed] = useState<SocialPost[]>([]);
+
+  // 5. Mailchimp States & Persistent Subscribers database
+  interface MailchimpSubscriber {
+    id: string;
+    name: string;
+    email: string;
+    status: "Subscribed" | "Unsubscribed";
+    signupDate: string;
+  }
+  const [mcGoal, setMcGoal] = useState("Product Launch");
+  const [mcDesc, setMcDesc] = useState("");
+  const [mcTone, setMcTone] = useState("Professional");
+  const [mcResult, setMcResult] = useState<string | null>(null);
+  const [subscribers, setSubscribers] = useState<MailchimpSubscriber[]>([]);
+
+  // 7. Jasper AI States & Persistent Drafts history
+  interface JasperDraft {
+    id: string;
+    type: string;
+    prompt: string;
+    content: string;
+    timestamp: string;
+  }
+  const [jasperType, setJasperType] = useState("AIDA");
+  const [jasperPrompt, setJasperPrompt] = useState("");
+  const [jasperOutput, setJasperOutput] = useState<string | null>(null);
+  const [jasperHistory, setJasperHistory] = useState<JasperDraft[]>([]);
+
+  // UI state variables
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [newNoteText, setNewNoteText] = useState("");
-
   const [newContactName, setNewContactName] = useState("");
   const [newContactComp, setNewContactComp] = useState("");
   const [newContactEmail, setNewContactEmail] = useState("");
   const [newContactVal, setNewContactVal] = useState("");
   const [newContactStage, setNewContactStage] = useState("Lead");
 
-  const saveContactsData = (updatedContacts: Contact[]) => {
-    setContacts(updatedContacts);
-    localStorage.setItem("growthos_suitehub_contacts", JSON.stringify(updatedContacts));
+  const [newKw, setNewKw] = useState("");
+  const [newKwVol, setNewKwVol] = useState("");
+  const [newKwDiff, setNewKwDiff] = useState("");
+
+  const [newOutreachDom, setNewOutreachDom] = useState("");
+  const [newOutreachScore, setNewOutreachScore] = useState("");
+  const [newOutreachCont, setNewOutreachCont] = useState("");
+
+  const [newPostText, setNewPostText] = useState("");
+  const [newPostPlatform, setNewPostPlatform] = useState<"meta" | "twitter" | "linkedin" | "youtube">("linkedin");
+  const [newPostTime, setNewPostTime] = useState("");
+  const [aiComposerLoading, setAiComposerLoading] = useState(false);
+
+  const [newSubName, setNewSubName] = useState("");
+  const [newSubEmail, setNewSubEmail] = useState("");
+
+  // ====== CROSS-MODULE INTELLIGENCE SYNC METRICS ======
+  const promoteToCoreClient = async (contact: Contact) => {
+    if (!user) return;
+    try {
+      await addDoc(collection(db, `users/${user.uid}/clients`), {
+        name: contact.name,
+        email: contact.email,
+        niche: contact.company || "Marketing Client",
+        brandVoice: "Professional, Authoritative",
+        createdAt: new Date().toISOString()
+      });
+      showToast(`Successfully promoted ${contact.name} (${contact.company || 'Independent'}) to Core CRM Client list!`, "success");
+    } catch (error) {
+      showToast("Sync to Core Client Database failed.", "error");
+    }
   };
 
-  const saveNotesData = (updatedNotes: { [id: string]: string[] }) => {
-    setContactNotes(updatedNotes);
-    localStorage.setItem("growthos_suitehub_contact_notes", JSON.stringify(updatedNotes));
+  const createCoreProjectFromLead = async (contact: Contact) => {
+    if (!user) return;
+    try {
+      await addDoc(collection(db, `users/${user.uid}/projects`), {
+        title: `${contact.company || contact.name} Scaling Campaign`,
+        description: `Coordinated scale outreach, search keyword dominance audits, and performance ad creative campaigns. Initial projected value ₹${contact.value}.`,
+        clientId: "", 
+        status: "planning",
+        priority: "medium",
+        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        createdAt: new Date().toISOString()
+      });
+      showToast(`Generated Core Growth Project for ${contact.company || contact.name}! Check Projects tab!`, "success");
+    } catch (error) {
+      showToast("Project generation failed", "error");
+    }
   };
 
-  const addHubspotContact = () => {
+  const syncKeywordToTasks = async (term: string, difficulty: number) => {
+    if (!user) return;
+    try {
+      await addDoc(collection(db, `users/${user.uid}/tasks`), {
+        title: `Draft high-priority SEO article targeting keyword: "${term}"`,
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        priority: difficulty > 40 ? "high" : difficulty > 20 ? "medium" : "low",
+        status: "pending",
+        createdAt: new Date().toISOString()
+      });
+      showToast(`SEO Action Task for keyword "${term}" successfully linked to main Task Board!`, "success");
+    } catch (e) {
+      showToast("Keyword task creation failed.", "error");
+    }
+  };
+
+  const syncOutreachToTasks = async (domain: string, contact: string) => {
+    if (!user) return;
+    try {
+      await addDoc(collection(db, `users/${user.uid}/tasks`), {
+        title: `Sponsor or pitching backlink outreach exchange with: ${domain} (${contact})`,
+        dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        priority: "medium",
+        status: "pending",
+        createdAt: new Date().toISOString()
+      });
+      showToast(`Backlink outreach task appended to team Kanban board!`, "success");
+    } catch (e) {
+      showToast("Task creation failed", "error");
+    }
+  };
+
+  const syncPostToCalendar = async (post: SocialPost) => {
+    if (!user) return;
+    try {
+      await addDoc(collection(db, `users/${user.uid}/calendar`), {
+        title: `[Social] ${post.platform.toUpperCase()} broadcast: "${post.content.substring(0, 30)}..."`,
+        date: post.scheduleTime.split(" ")[0] || new Date().toISOString().split("T")[0],
+        type: "social-post",
+        description: post.content,
+        createdAt: new Date().toISOString()
+      });
+      showToast(`Hootsuite post synced to Core Calendar!`, "success");
+    } catch (e) {
+      showToast("Calendar sync failed", "error");
+    }
+  };
+
+  const saveCopyAsAsset = async (name: string, content: string) => {
+    if (!user) return;
+    try {
+      await addDoc(collection(db, `users/${user.uid}/assets`), {
+        userId: user.uid,
+        clientId: null,
+        name: `${name} Copy Draft`,
+        type: "doc",
+        url: content.substring(0, 150) + "...", 
+        createdAt: new Date().toISOString()
+      });
+      showToast(`Newsletter marketing copy saved to brand Assets library!`, "success");
+    } catch (e) {
+      showToast("Asset library save failed", "error");
+    }
+  };
+
+  // ====== FIRESTORE REAL-TIME SYNCHRONIZERS ======
+  useEffect(() => {
+    if (!user) return;
+
+    // A. HubSpot Contacts
+    const unsubscribeContacts = onSnapshot(
+      query(collection(db, `users/${user.uid}/suitehub_contacts`)),
+      (snapshot) => {
+        if (snapshot.empty) {
+          const defaults = [
+            { name: "Aarav Mehta", email: "aarav@mehtatech.com", company: "Mehta Technologies", stage: "Lead", value: 45000, score: 85, createdAt: new Date(Date.now() - 4000).toISOString() },
+            { name: "Emily Watson", email: "emily@watsonretail.co.uk", company: "Watson Retail", stage: "Contacted", value: 120000, score: 62, createdAt: new Date(Date.now() - 3000).toISOString() },
+            { name: "Vikram Malhotra", email: "v.malhotra@indialogistics.in", company: "India Logistics", stage: "Qualified", value: 350000, score: 91, createdAt: new Date(Date.now() - 2000).toISOString() },
+            { name: "Sophie Dubois", email: "s.dubois@luxebrand.fr", company: "Luxe Brands Corp", stage: "Proposal", value: 500000, score: 48, createdAt: new Date(Date.now() - 1000).toISOString() },
+          ];
+          defaults.forEach((item) => {
+            addDoc(collection(db, `users/${user.uid}/suitehub_contacts`), item);
+          });
+        } else {
+          setContacts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Contact[]);
+        }
+      }
+    );
+
+    // B. HubSpot Notes
+    const unsubscribeNotes = onSnapshot(
+      collection(db, `users/${user.uid}/suitehub_contact_notes`),
+      (snapshot) => {
+        if (snapshot.empty) {
+          const defaults = {
+            "1": ["Discovered via LinkedIn outreach.", "Scheduled introductory call for next Tuesday."],
+            "2": ["Interested in e-commerce migration services.", "Needs detailed proposal on custom Shopify theme development."],
+            "3": ["Enterprise-level logistics firm.", "In negotiations with CEO regarding CRM integrations."],
+            "4": ["High end luxury brand expansion.", "Reviewing proposal stages on multi-channel ad plans."],
+          };
+          Object.entries(defaults).forEach(([id, notes]) => {
+            setDoc(doc(db, `users/${user.uid}/suitehub_contact_notes`, id), { notes });
+          });
+        } else {
+          const notesMap: { [id: string]: string[] } = {};
+          snapshot.forEach((doc) => {
+            notesMap[doc.id] = doc.data().notes || [];
+          });
+          setContactNotes(notesMap);
+        }
+      }
+    );
+
+    // C. Tracked Keywords (SEMrush)
+    const unsubscribeKeywords = onSnapshot(
+      query(collection(db, `users/${user.uid}/suitehub_keywords`), orderBy("createdAt", "desc")),
+      (snapshot) => {
+        if (snapshot.empty) {
+          const defaults = [
+            { keyword: "advanced crm for startups", volume: 1800, difficulty: 24, status: "In Progress", createdAt: new Date(Date.now() - 3000).toISOString() },
+            { keyword: "best visual marketing pipeline cost", volume: 950, difficulty: 12, status: "To Write", createdAt: new Date(Date.now() - 2000).toISOString() },
+            { keyword: "top lead scores algorithms b2b", volume: 320, difficulty: 8, status: "Optimized", createdAt: new Date(Date.now() - 1000).toISOString() },
+          ];
+          defaults.forEach((item) => {
+            addDoc(collection(db, `users/${user.uid}/suitehub_keywords`), item);
+          });
+        } else {
+          setTrackedKeywords(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as TrackedKeyword[]);
+        }
+      }
+    );
+
+    // D. Backlink Outreach (Ahrefs)
+    const unsubscribeOutreach = onSnapshot(
+      query(collection(db, `users/${user.uid}/suitehub_outreach`), orderBy("createdAt", "desc")),
+      (snapshot) => {
+        if (snapshot.empty) {
+          const defaults = [
+            { domain: "techcrunch.com/features", score: 92, contact: "editor@techcrunch.com", status: "Uncontacted", createdAt: new Date(Date.now() - 3000).toISOString() },
+            { domain: "medium.com/startup-advice", score: 80, contact: "pitch@mediumventures.com", status: "Pitch Sent", createdAt: new Date(Date.now() - 2000).toISOString() },
+            { domain: "saashub.com/blog", score: 74, contact: "onboarding@saashub.com", status: "Link Live", createdAt: new Date(Date.now() - 1000).toISOString() }
+          ];
+          defaults.forEach((item) => {
+            addDoc(collection(db, `users/${user.uid}/suitehub_outreach`), item);
+          });
+        } else {
+          setOutreachTargets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OutreachTarget[]);
+        }
+      }
+    );
+
+    // E. Social Post Feed (Hootsuite)
+    const unsubscribeSocial = onSnapshot(
+      query(collection(db, `users/${user.uid}/suitehub_posts`), orderBy("createdAt", "desc")),
+      (snapshot) => {
+        if (snapshot.empty) {
+          const defaults = [
+            { content: "GrowthOS AI has revolutionized how our digital marketing agency runs campaign analysis. Real-time data + smart generation are massive game-changers! #SaaS #GrowthScaling", platform: "linkedin", scheduleTime: "2026-06-14 10:30", status: "Scheduled", engagement: { views: 125, likes: 11, clicks: 4 }, createdAt: new Date(Date.now() - 3000).toISOString() },
+            { content: "Don't let missing keywords sink your SEO campaigns. Use our SEO tools to do Gap audits instantly. Here is how: https://growthos.ai/blog/keywords", platform: "twitter", scheduleTime: "2026-06-15 14:15", status: "Scheduled", engagement: { views: 89, likes: 6, clicks: 2 }, createdAt: new Date(Date.now() - 2000).toISOString() },
+            { content: "Why performance marketers are migrating their entire brand workflow to serverless frameworks with integrated cognitive reasoning pipelines. Complete analysis video live on Monday!", platform: "youtube", scheduleTime: "2026-06-18 19:00", status: "Draft", engagement: { views: 0, likes: 0, clicks: 0 }, createdAt: new Date(Date.now() - 1000).toISOString() }
+          ];
+          defaults.forEach((item) => {
+            addDoc(collection(db, `users/${user.uid}/suitehub_posts`), item);
+          });
+        } else {
+          setSocialFeed(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SocialPost[]);
+        }
+      }
+    );
+
+    // F. Audience Subscribers (Mailchimp)
+    const unsubscribeSubscribers = onSnapshot(
+      query(collection(db, `users/${user.uid}/suitehub_subscribers`), orderBy("createdAt", "desc")),
+      (snapshot) => {
+        if (snapshot.empty) {
+          const defaults = [
+            { name: "Rohan Sharma", email: "rohan@indiatech.io", status: "Subscribed", signupDate: "2026-06-01", createdAt: new Date(Date.now() - 3000).toISOString() },
+            { name: "Jessica Alva", email: "jessica@alvagroup.com", status: "Subscribed", signupDate: "2026-06-05", createdAt: new Date(Date.now() - 2000).toISOString() },
+            { name: "Nikhil Joshi", email: "n.joshi@startupventures.co", status: "Unsubscribed", signupDate: "2026-05-20", createdAt: new Date(Date.now() - 1000).toISOString() }
+          ];
+          defaults.forEach((item) => {
+            addDoc(collection(db, `users/${user.uid}/suitehub_subscribers`), item);
+          });
+        } else {
+          setSubscribers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as MailchimpSubscriber[]);
+        }
+      }
+    );
+
+    // G. Jasper Copywriting History
+    const unsubscribeJasper = onSnapshot(
+      query(collection(db, `users/${user.uid}/suitehub_jasper`), orderBy("createdAt", "desc")),
+      (snapshot) => {
+        if (snapshot.empty) {
+          const defaults = [
+            {
+              type: "AIDA",
+              prompt: "CRM pipeline built for developers with free migrations",
+              content: `**ATTENTION:** Are manual spreadsheets slowing down your deployment velocities?\n\n**INTEREST:** We built the first lifecycle CRM engineered from the code up for fast-paced developer startups. Say goodbye to manual sync scripts.\n\n**DESIRE:** Integrate seamlessly with PostgreSQL or SaaS databases, build pipelines directly from Git tags, and utilize instant cloud webhooks for status transparency. Free migration assistance on all standard tier plans.\n\n**ACTION:** Get started for free today. Backup and sync your telemetry arrays in one click at GrowthSuite.`,
+              timestamp: "2026-06-12 11:40",
+              createdAt: new Date().toISOString()
+            }
+          ];
+          defaults.forEach((item) => {
+            addDoc(collection(db, `users/${user.uid}/suitehub_jasper`), item);
+          });
+        } else {
+          setJasperHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as JasperDraft[]);
+        }
+      }
+    );
+
+    // H. Google Analytics Live Event Logs
+    const unsubscribeGAEvents = onSnapshot(
+      query(collection(db, `users/${user.uid}/suitehub_ga_events`), orderBy("createdAt", "desc")),
+      (snapshot) => {
+        if (snapshot.empty) {
+          const defaults = [
+            { type: "Lead Generated", url: "/upgrade-plan", country: "United States", time: "2 mins ago", status: "success", createdAt: new Date(Date.now() - 300000).toISOString() },
+            { type: "SEO Article Read", url: "/blog/scale", country: "India", time: "5 mins ago", status: "success", createdAt: new Date(Date.now() - 200000).toISOString() },
+            { type: "Hootsuite Click", url: "/dashboard", country: "Germany", time: "12 mins ago", status: "success", createdAt: new Date(Date.now() - 100000).toISOString() }
+          ];
+          defaults.forEach((item) => {
+            addDoc(collection(db, `users/${user.uid}/suitehub_ga_events`), item);
+          });
+        } else {
+          setGaMockEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as unknown as GaEvent[]);
+        }
+      }
+    );
+
+    // I. Google Analytics Installed Pixels
+    const unsubscribePixels = onSnapshot(
+      query(collection(db, `users/${user.uid}/suitehub_pixels`), orderBy("createdAt", "asc")),
+      (snapshot) => {
+        if (snapshot.empty) {
+          const defaults = [
+            { name: "Google Analytics G-Z1904YF", createdAt: new Date(Date.now() - 2000).toISOString() },
+            { name: "Meta Pixel lead-tracking v2", createdAt: new Date(Date.now() - 1000).toISOString() }
+          ];
+          defaults.forEach((item) => {
+            addDoc(collection(db, `users/${user.uid}/suitehub_pixels`), item);
+          });
+        } else {
+          setInstalledPixels(snapshot.docs.map(doc => doc.data().name as string));
+        }
+      }
+    );
+
+    // J. Brevo Customer Conversation Messages
+    const unsubscribeBrevo = onSnapshot(
+      query(collection(db, `users/${user.uid}/suitehub_brevo_chats`), orderBy("createdAt", "asc")),
+      (snapshot) => {
+        if (snapshot.empty) {
+          const defaults = [
+            { sender: "customer", text: "Hi, I am looking for the enterprise license pricing details. Do you offer seasonal discounts?", time: "10:30", createdAt: new Date(Date.now() - 300000).toISOString() },
+            { sender: "agent", text: "Hello! Thank you for reaching out. Yes, we support customizable enterprise packages starting at ₹24,999/mo depending on user seats, and offer a flat 15% discount on annual billing cycles.", time: "10:32", createdAt: new Date(Date.now() - 200000).toISOString() },
+            { sender: "customer", text: "Great! Can you draft me a custom proposal based on 25 users with priority support features?", time: "10:35", createdAt: new Date(Date.now() - 100000).toISOString() }
+          ];
+          defaults.forEach((item) => {
+            addDoc(collection(db, `users/${user.uid}/suitehub_brevo_chats`), item);
+          });
+        } else {
+          setBrevoChats(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as unknown as BrevoMessage[]);
+        }
+      }
+    );
+
+    return () => {
+      unsubscribeContacts();
+      unsubscribeNotes();
+      unsubscribeKeywords();
+      unsubscribeOutreach();
+      unsubscribeSocial();
+      unsubscribeSubscribers();
+      unsubscribeJasper();
+      unsubscribeGAEvents();
+      unsubscribePixels();
+      unsubscribeBrevo();
+    };
+  }, [user]);
+
+  // ====== DATABASE INTERACTION CONTROLS (FIRESTORE ENFORCED) ======
+  const addHubspotContact = async () => {
     if (!newContactName || !newContactEmail) {
       showToast("Please enter contact name and email.", "error");
+      return;
+    }
+    if (!user) {
+      showToast("Please authenticate first to sync changes.", "error");
       return;
     }
     const val = parseFloat(newContactVal) || 0;
@@ -260,55 +709,67 @@ export function SuiteHub() {
     const valueWeight = val > 100000 ? 50 : val > 50000 ? 35 : 20;
     const computedScore = Math.min(100, Math.floor(valueWeight + emailWeight + Math.random() * 30));
 
-    const newContactId = Date.now().toString();
-    const newContact: Contact = {
-      id: newContactId,
-      name: newContactName,
-      company: newContactComp || "Independent",
-      email: newContactEmail,
-      stage: newContactStage,
-      value: val,
-      score: computedScore
-    };
+    try {
+      const docRef = await addDoc(collection(db, `users/${user.uid}/suitehub_contacts`), {
+        name: newContactName,
+        company: newContactComp || "Independent",
+        email: newContactEmail,
+        stage: newContactStage,
+        value: val,
+        score: computedScore,
+        createdAt: new Date().toISOString()
+      });
 
-    const updated = [newContact, ...contacts];
-    saveContactsData(updated);
+      await setDoc(doc(db, `users/${user.uid}/suitehub_contact_notes`, docRef.id), {
+        notes: ["Deal record initialized in HubSpot pipeline."]
+      });
 
-    const updatedNotes = { ...contactNotes, [newContactId]: ["Deal record initialized in HubSpot pipeline."] };
-    saveNotesData(updatedNotes);
-
-    setNewContactName("");
-    setNewContactComp("");
-    setNewContactEmail("");
-    setNewContactVal("");
-    showToast("HubSpot CRM deal pipeline updated!", "success");
-  };
-
-  const updateContactStage = (id: string, stage: string) => {
-    const updated = contacts.map(c => c.id === id ? { ...c, stage } : c);
-    saveContactsData(updated);
-    showToast(`Lead stage updated to: ${stage}`, "success");
-  };
-
-  const deleteHubspotContact = (id: string) => {
-    const updated = contacts.filter(c => c.id !== id);
-    saveContactsData(updated);
-    if (selectedContact?.id === id) {
-      setSelectedContact(null);
+      setNewContactName("");
+      setNewContactComp("");
+      setNewContactEmail("");
+      setNewContactVal("");
+      showToast("HubSpot CRM deal pipeline updated!", "success");
+    } catch (e) {
+      showToast("Failed to save CRM contact data.", "error");
     }
-    showToast("Contact deleted from CRM", "info");
   };
 
-  const addContactNote = (id: string) => {
-    if (!newNoteText.trim()) return;
+  const updateContactStage = async (id: string, stage: string) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, `users/${user.uid}/suitehub_contacts`, id), { stage });
+      showToast(`Lead stage updated to: ${stage}`, "success");
+    } catch (e) {
+      showToast("Failed to update status stage.", "error");
+    }
+  };
+
+  const deleteHubspotContact = async (id: string) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, `users/${user.uid}/suitehub_contacts`, id));
+      await deleteDoc(doc(db, `users/${user.uid}/suitehub_contact_notes`, id));
+      if (selectedContact?.id === id) {
+        setSelectedContact(null);
+      }
+      showToast("Contact deleted from CRM", "info");
+    } catch (e) {
+      showToast("Deletion failed.", "error");
+    }
+  };
+
+  const addContactNote = async (id: string) => {
+    if (!newNoteText.trim() || !user) return;
     const currentNotes = contactNotes[id] || [];
-    const updatedNotes = {
-      ...contactNotes,
-      [id]: [...currentNotes, newNoteText.trim()]
-    };
-    saveNotesData(updatedNotes);
-    setNewNoteText("");
-    showToast("Activity log entry added successfully!", "success");
+    try {
+      await setDoc(doc(db, `users/${user.uid}/suitehub_contact_notes`, id), {
+        notes: [...currentNotes, newNoteText.trim()]
+      });
+      setNewNoteText("");
+      showToast("Activity log entry added successfully!", "success");
+    } catch (e) {
+      showToast("Failed to log activity.", "error");
+    }
   };
 
   const exportHubspotCRM = () => {
@@ -322,72 +783,47 @@ export function SuiteHub() {
     showToast("CRM Database Backup downloaded successfully!", "success");
   };
 
-  // 2. SEMrush SEO Keyword Gap states & persistent watchlist
-  const [semUrl, setSemUrl] = useState("");
-  const [semCompUrl, setSemCompUrl] = useState("");
-  const [semNiche, setSemNiche] = useState("Technology");
-  const [semResult, setSemResult] = useState<string | null>(null);
-
-  // Keyword personal list
-  interface TrackedKeyword {
-    id: string;
-    keyword: string;
-    volume: number;
-    difficulty: number;
-    status: "To Write" | "In Progress" | "Optimized" | "Ranking #1";
-  }
-
-  const [trackedKeywords, setTrackedKeywords] = useState<TrackedKeyword[]>(() => {
-    const saved = localStorage.getItem("growthos_suite_tracked_keywords");
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return [
-      { id: "1", keyword: "advanced crm for startups", volume: 1800, difficulty: 24, status: "In Progress" },
-      { id: "2", keyword: "best visual marketing pipeline cost", volume: 950, difficulty: 12, status: "To Write" },
-      { id: "3", keyword: "top lead scores algorithms b2b", volume: 320, difficulty: 8, status: "Optimized" },
-    ];
-  });
-
-  const [newKw, setNewKw] = useState("");
-  const [newKwVol, setNewKwVol] = useState("");
-  const [newKwDiff, setNewKwDiff] = useState("");
-
-  const saveKeywords = (updated: TrackedKeyword[]) => {
-    setTrackedKeywords(updated);
-    localStorage.setItem("growthos_suite_tracked_keywords", JSON.stringify(updated));
-  };
-
-  const addTrackedKeyword = () => {
+  const addTrackedKeyword = async () => {
     if (!newKw.trim()) {
       showToast("Please enter a keyword term first.", "error");
       return;
     }
-    const kwItem: TrackedKeyword = {
-      id: Date.now().toString(),
-      keyword: newKw.trim(),
-      volume: parseInt(newKwVol) || 250,
-      difficulty: parseFloat(newKwDiff) || 15,
-      status: "To Write"
-    };
-    const updated = [kwItem, ...trackedKeywords];
-    saveKeywords(updated);
-    setNewKw("");
-    setNewKwVol("");
-    setNewKwDiff("");
-    showToast("Keyword target appended to SEMrush tracking deck!", "success");
+    if (!user) return;
+    try {
+      await addDoc(collection(db, `users/${user.uid}/suitehub_keywords`), {
+        keyword: newKw.trim(),
+        volume: parseInt(newKwVol) || 250,
+        difficulty: parseFloat(newKwDiff) || 15,
+        status: "To Write",
+        createdAt: new Date().toISOString()
+      });
+      setNewKw("");
+      setNewKwVol("");
+      setNewKwDiff("");
+      showToast("Keyword target appended to SEMrush tracking deck!", "success");
+    } catch (e) {
+      showToast("Failed to track keyword.", "error");
+    }
   };
 
-  const updateKeywordStatus = (id: string, status: any) => {
-    const updated = trackedKeywords.map(k => k.id === id ? { ...k, status } : k);
-    saveKeywords(updated);
-    showToast(`Keyword planning status updated to: ${status}`, "success");
+  const updateKeywordStatus = async (id: string, status: any) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, `users/${user.uid}/suitehub_keywords`, id), { status });
+      showToast(`Keyword planning status updated to: ${status}`, "success");
+    } catch (e) {
+      showToast("Status change failed.", "error");
+    }
   };
 
-  const removeTrackedKeyword = (id: string) => {
-    const updated = trackedKeywords.filter(k => k.id !== id);
-    saveKeywords(updated);
-    showToast("Keyword removed from target list", "info");
+  const removeTrackedKeyword = async (id: string) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, `users/${user.uid}/suitehub_keywords`, id));
+      showToast("Keyword removed from target list", "info");
+    } catch (e) {
+      showToast("Deletion failed.", "error");
+    }
   };
 
   const runSemrushAudit = async () => {
@@ -422,69 +858,47 @@ export function SuiteHub() {
     }
   };
 
-  // 3. Ahrefs States & persistent backlink outreach CRM
-  const [ahrefsUrl, setAhrefsUrl] = useState("");
-  const [ahrefsResult, setAhrefsResult] = useState<string | null>(null);
-
-  interface OutreachTarget {
-    id: string;
-    domain: string;
-    score: number;
-    contact: string;
-    status: "Uncontacted" | "Pitch Sent" | "Negotiating" | "Link Live";
-  }
-
-  const [outreachTargets, setOutreachTargets] = useState<OutreachTarget[]>(() => {
-    const saved = localStorage.getItem("growthos_suite_outreach_targets");
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return [
-      { id: "1", domain: "techcrunch.com/features", score: 92, contact: "editor@techcrunch.com", status: "Uncontacted" },
-      { id: "2", domain: "medium.com/startup-advice", score: 80, contact: "pitch@mediumventures.com", status: "Pitch Sent" },
-      { id: "3", domain: "saashub.com/blog", score: 74, contact: "onboarding@saashub.com", status: "Link Live" },
-    ];
-  });
-
-  const [newOutreachDom, setNewOutreachDom] = useState("");
-  const [newOutreachScore, setNewOutreachScore] = useState("");
-  const [newOutreachCont, setNewOutreachCont] = useState("");
-
-  const saveOutreach = (updated: OutreachTarget[]) => {
-    setOutreachTargets(updated);
-    localStorage.setItem("growthos_suite_outreach_targets", JSON.stringify(updated));
-  };
-
-  const addOutreachTarget = () => {
+  const addOutreachTarget = async () => {
     if (!newOutreachDom.trim()) {
       showToast("Specify domain reference or landing page url.", "error");
       return;
     }
-    const target: OutreachTarget = {
-      id: Date.now().toString(),
-      domain: newOutreachDom.trim().replace(/^https?:\/\//, ''),
-      score: parseInt(newOutreachScore) || 50,
-      contact: newOutreachCont.trim() || "contact@domain.com",
-      status: "Uncontacted"
-    };
-    const updated = [target, ...outreachTargets];
-    saveOutreach(updated);
-    setNewOutreachDom("");
-    setNewOutreachScore("");
-    setNewOutreachCont("");
-    showToast("Outreach campaign target registered in system!", "success");
+    if (!user) return;
+    try {
+      await addDoc(collection(db, `users/${user.uid}/suitehub_outreach`), {
+        domain: newOutreachDom.trim().replace(/^https?:\/\//, ''),
+        score: parseInt(newOutreachScore) || 50,
+        contact: newOutreachCont.trim() || "contact@domain.com",
+        status: "Uncontacted",
+        createdAt: new Date().toISOString()
+      });
+      setNewOutreachDom("");
+      setNewOutreachScore("");
+      setNewOutreachCont("");
+      showToast("Outreach campaign target registered in system!", "success");
+    } catch (e) {
+      showToast("Outreach add failed.", "error");
+    }
   };
 
-  const updateOutreachStatus = (id: string, status: any) => {
-    const updated = outreachTargets.map(t => t.id === id ? { ...t, status } : t);
-    saveOutreach(updated);
-    showToast(`Outreach target progress updated: ${status}`, "success");
+  const updateOutreachStatus = async (id: string, status: any) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, `users/${user.uid}/suitehub_outreach`, id), { status });
+      showToast(`Outreach target progress updated: ${status}`, "success");
+    } catch (e) {
+      showToast("Status change failed.", "error");
+    }
   };
 
-  const removeOutreachTarget = (id: string) => {
-    const updated = outreachTargets.filter(t => t.id !== id);
-    saveOutreach(updated);
-    showToast("Outreach partner removed", "info");
+  const removeOutreachTarget = async (id: string) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, `users/${user.uid}/suitehub_outreach`, id));
+      showToast("Outreach partner removed", "info");
+    } catch (e) {
+      showToast("Deletion failed.", "error");
+    }
   };
 
   const runAhrefsAudit = async () => {
@@ -516,26 +930,28 @@ export function SuiteHub() {
     }
   };
 
-  // 4. Hootsuite Scheduler States & AI Generator
-  const [socialFeed, setSocialFeed] = useState<SocialPost[]>(() => {
-    const saved = localStorage.getItem("growthos_hootsuite_queue");
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+  const addSocialPost = async () => {
+    if (!newPostText) {
+      showToast("Please enter content for your social post.", "error");
+      return;
     }
-    return [
-      { id: "1", content: "GrowthOS AI has revolutionized how our digital marketing agency runs campaign analysis. Real-time data + smart generation are massive game-changers! #SaaS #GrowthScaling", platform: "linkedin", scheduleTime: "2026-06-14 10:30", status: "Scheduled", engagement: { views: 125, likes: 11, clicks: 4 } },
-      { id: "2", content: "Don't let missing keywords sink your SEO campaigns. Use our SEO tools to do Gap audits instantly. Here is how: https://growthos.ai/blog/keywords", platform: "twitter", scheduleTime: "2026-06-15 14:15", status: "Scheduled", engagement: { views: 89, likes: 6, clicks: 2 } },
-      { id: "3", content: "Why performance marketers are migrating their entire brand workflow to serverless frameworks with integrated cognitive reasoning pipelines. Complete analysis video live on Monday!", platform: "youtube", scheduleTime: "2026-06-18 19:00", status: "Draft", engagement: { views: 0, likes: 0, clicks: 0 } },
-    ];
-  });
-  const [newPostText, setNewPostText] = useState("");
-  const [newPostPlatform, setNewPostPlatform] = useState<"meta" | "twitter" | "linkedin" | "youtube">("linkedin");
-  const [newPostTime, setNewPostTime] = useState("");
-  const [aiComposerLoading, setAiComposerLoading] = useState(false);
-
-  const saveSocialFeed = (updated: SocialPost[]) => {
-    setSocialFeed(updated);
-    localStorage.setItem("growthos_hootsuite_queue", JSON.stringify(updated));
+    if (!user) return;
+    const sched = newPostTime || new Date(Date.now() + 86400000).toISOString().slice(0, 16).replace("T", " ");
+    try {
+      await addDoc(collection(db, `users/${user.uid}/suitehub_posts`), {
+        content: newPostText,
+        platform: newPostPlatform,
+        scheduleTime: sched,
+        status: "Scheduled",
+        engagement: { views: 0, likes: 0, clicks: 0 },
+        createdAt: new Date().toISOString()
+      });
+      setNewPostText("");
+      setNewPostTime("");
+      showToast("Post inserted into Hootsuite Publisher Queue!", "success");
+    } catch (e) {
+      showToast("Failed to schedule post.", "error");
+    }
   };
 
   const generateAICaption = async () => {
@@ -561,113 +977,77 @@ export function SuiteHub() {
     }
   };
 
-  const addSocialPost = () => {
-    if (!newPostText) {
-      showToast("Please enter content for your social post.", "error");
-      return;
+  const publishImmediately = async (id: string) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, `users/${user.uid}/suitehub_posts`, id), {
+        status: "Published",
+        engagement: { 
+          views: Math.floor(250 + Math.random() * 500), 
+          likes: Math.floor(15 + Math.random() * 40), 
+          clicks: Math.floor(8 + Math.random() * 20) 
+        }
+      });
+      showToast("Post broadcasted instantly across connected webhooks!", "success");
+    } catch (e) {
+      showToast("Broadcast failure.", "error");
     }
-    const sched = newPostTime || new Date(Date.now() + 86400000).toISOString().slice(0, 16).replace("T", " ");
-    const newPost: SocialPost = {
-      id: Date.now().toString(),
-      content: newPostText,
-      platform: newPostPlatform,
-      scheduleTime: sched,
-      status: "Scheduled",
-      engagement: { views: 0, likes: 0, clicks: 0 }
-    };
-    const updated = [newPost, ...socialFeed];
-    saveSocialFeed(updated);
-    setNewPostText("");
-    setNewPostTime("");
-    showToast("Post inserted into Hootsuite Publisher Queue!", "success");
   };
 
-  const publishImmediately = (id: string) => {
-    const updated: SocialPost[] = socialFeed.map(post => post.id === id ? { 
-      ...post, 
-      status: "Published" as const,
-      engagement: { 
-        views: Math.floor(250 + Math.random() * 500), 
-        likes: Math.floor(15 + Math.random() * 40), 
-        clicks: Math.floor(8 + Math.random() * 20) 
-      }
-    } : post);
-    saveSocialFeed(updated);
-    showToast("Post broadcasted instantly across connected webhooks!", "success");
-  };
-
-  const deleteSocialPost = (id: string) => {
-    const updated = socialFeed.filter(p => p.id !== id);
-    saveSocialFeed(updated);
-    showToast("Social post removed from queue", "info");
-  };
-
-  // 5. Mailchimp States & Persistent Subscribers database
-  interface MailchimpSubscriber {
-    id: string;
-    name: string;
-    email: string;
-    status: "Subscribed" | "Unsubscribed";
-    signupDate: string;
-  }
-
-  const [mcGoal, setMcGoal] = useState("Product Launch");
-  const [mcDesc, setMcDesc] = useState("");
-  const [mcTone, setMcTone] = useState("Professional");
-  const [mcResult, setMcResult] = useState<string | null>(null);
-
-  const [subscribers, setSubscribers] = useState<MailchimpSubscriber[]>(() => {
-    const saved = localStorage.getItem("growthos_mailchimp_subscribers");
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+  const deleteSocialPost = async (id: string) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, `users/${user.uid}/suitehub_posts`, id));
+      showToast("Social post removed from queue", "info");
+    } catch (e) {
+      showToast("Removal failed.", "error");
     }
-    return [
-      { id: "1", name: "Rohan Sharma", email: "rohan@indiatech.io", status: "Subscribed", signupDate: "2026-06-01" },
-      { id: "2", name: "Jessica Alva", email: "jessica@alvagroup.com", status: "Subscribed", signupDate: "2026-06-05" },
-      { id: "3", name: "Nikhil Joshi", email: "n.joshi@startupventures.co", status: "Unsubscribed", signupDate: "2026-05-20" },
-    ];
-  });
-
-  const [newSubName, setNewSubName] = useState("");
-  const [newSubEmail, setNewSubEmail] = useState("");
-
-  const saveSubscribers = (updated: MailchimpSubscriber[]) => {
-    setSubscribers(updated);
-    localStorage.setItem("growthos_mailchimp_subscribers", JSON.stringify(updated));
   };
 
-  const addSubscriber = () => {
+  const addSubscriber = async () => {
     if (!newSubName.trim() || !newSubEmail.trim() || !newSubEmail.includes("@")) {
       showToast("Provide a valid name and active email address.", "error");
       return;
     }
-    const newSub: MailchimpSubscriber = {
-      id: Date.now().toString(),
-      name: newSubName.trim(),
-      email: newSubEmail.trim(),
-      status: "Subscribed",
-      signupDate: new Date().toISOString().split("T")[0]
-    };
-    const updated = [newSub, ...subscribers];
-    saveSubscribers(updated);
-    setNewSubName("");
-    setNewSubEmail("");
-    showToast("Contact added to Mailchimp subscriber directory!", "success");
+    if (!user) return;
+    try {
+      await addDoc(collection(db, `users/${user.uid}/suitehub_subscribers`), {
+        name: newSubName.trim(),
+        email: newSubEmail.trim(),
+        status: "Subscribed",
+        signupDate: new Date().toISOString().split("T")[0],
+        createdAt: new Date().toISOString()
+      });
+      setNewSubName("");
+      setNewSubEmail("");
+      showToast("Contact added to Mailchimp subscriber directory!", "success");
+    } catch (e) {
+      showToast("Failed to register subscriber.", "error");
+    }
   };
 
-  const toggleSubscriberStatus = (id: string) => {
-    const updated = subscribers.map(s => s.id === id ? {
-      ...s,
-      status: s.status === "Subscribed" ? ("Unsubscribed" as any) : ("Subscribed" as any)
-    } : s);
-    saveSubscribers(updated);
-    showToast("Subscriber status updated!", "info");
+  const toggleSubscriberStatus = async (id: string) => {
+    if (!user) return;
+    const currentSub = subscribers.find(s => s.id === id);
+    if (!currentSub) return;
+    try {
+      await updateDoc(doc(db, `users/${user.uid}/suitehub_subscribers`, id), {
+        status: currentSub.status === "Subscribed" ? "Unsubscribed" : "Subscribed"
+      });
+      showToast("Subscriber status updated!", "info");
+    } catch (e) {
+      showToast("Update failed.", "error");
+    }
   };
 
-  const removeSubscriber = (id: string) => {
-    const updated = subscribers.filter(s => s.id !== id);
-    saveSubscribers(updated);
-    showToast("Contact removed from audience list", "info");
+  const removeSubscriber = async (id: string) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, `users/${user.uid}/suitehub_subscribers`, id));
+      showToast("Contact removed from audience list", "info");
+    } catch (e) {
+      showToast("Removal failed.", "error");
+    }
   };
 
   const copyBulkEmails = () => {
@@ -712,72 +1092,6 @@ export function SuiteHub() {
     }
   };
 
-  // 6. Google Analytics Simulated Live tracking states
-  const [gaMockEvents, setGaMockEvents] = useState([
-    { id: 1, type: "Session Start", url: "/landing-page", country: "United States", time: "Just now", status: "firing" },
-    { id: 2, type: "Form Submit (Lead)", url: "/contact-us", country: "India", time: "3s ago", status: "success" },
-    { id: 3, type: "Purchase Complete", url: "/checkout", country: "Germany", time: "12s ago", status: "success" },
-    { id: 4, type: "Ad Click (Meta)", url: "/product-page", country: "United Kingdom", time: "1m ago", status: "success" },
-  ]);
-  const [trackedPixelName, setTrackedPixelName] = useState("");
-  const [installedPixels, setInstalledPixels] = useState<string[]>(["Google Analytics tag (G-YEBQ91L)"]);
-
-  const installPixel = () => {
-    if (!trackedPixelName) return;
-    setInstalledPixels([...installedPixels, trackedPixelName]);
-    setTrackedPixelName("");
-    showToast("Pixel/Tag inserted into virtual Tag Manager!", "success");
-  };
-
-  const dispatchGaEvent = (type: string) => {
-    const geo = ["France", "Japan", "Australia", "Canada", "Singapore", "Dubai"][Math.floor(Math.random() * 6)];
-    const urls = ["/dashboard", "/register", "/upgrade", "/cart", "/about-us"];
-    const event = {
-      id: Date.now(),
-      type,
-      url: urls[Math.floor(Math.random() * urls.length)],
-      country: geo,
-      time: "Just now",
-      status: "success"
-    };
-    setGaMockEvents([event, ...gaMockEvents].slice(0, 10));
-    showToast(`Dispatched simulated measurement event: ${type}`, "info");
-  };
-
-  // 7. Jasper AI States & Persistent Drafts history
-  interface JasperDraft {
-    id: string;
-    type: string;
-    prompt: string;
-    content: string;
-    timestamp: string;
-  }
-
-  const [jasperType, setJasperType] = useState("AIDA");
-  const [jasperPrompt, setJasperPrompt] = useState("");
-  const [jasperOutput, setJasperOutput] = useState<string | null>(null);
-
-  const [jasperHistory, setJasperHistory] = useState<JasperDraft[]>(() => {
-    const saved = localStorage.getItem("growthos_jasper_history");
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return [
-      {
-        id: "ref-1",
-        type: "AIDA",
-        prompt: "CRM pipeline built for developers with free migrations",
-        content: `**ATTENTION:** Are manual spreadsheets slowing down your deployment velocities?\n\n**INTEREST:** We built the first lifecycle CRM engineered from the code up for fast-paced developer startups. Say goodbye to manual sync scripts.\n\n**DESIRE:** Integrate seamlessly with PostgreSQL or SaaS databases, build pipelines directly from Git tags, and utilize instant cloud webhooks for status transparency. Free migration assistance on all standard tier plans.\n\n**ACTION:** Get started for free today. Backup and sync your telemetry arrays in one click at GrowthSuite.`,
-        timestamp: "2026-06-12 11:40"
-      }
-    ];
-  });
-
-  const saveJasperHistory = (updated: JasperDraft[]) => {
-    setJasperHistory(updated);
-    localStorage.setItem("growthos_jasper_history", JSON.stringify(updated));
-  };
-
   const runJasperCopywriter = async () => {
     if (!jasperPrompt) {
       showToast("Provide write-up details for copy generation.", "error");
@@ -803,14 +1117,15 @@ export function SuiteHub() {
       });
       setJasperOutput(response);
       
-      const draftItem: JasperDraft = {
-        id: Date.now().toString(),
-        type: jasperType,
-        prompt: jasperPrompt,
-        content: response || "",
-        timestamp: new Date().toISOString().slice(0, 16).replace("T", " ")
-      };
-      saveJasperHistory([draftItem, ...jasperHistory]);
+      if (user) {
+        await addDoc(collection(db, `users/${user.uid}/suitehub_jasper`), {
+          type: jasperType,
+          prompt: jasperPrompt,
+          content: response || "",
+          timestamp: new Date().toISOString().slice(0, 16).replace("T", " "),
+          createdAt: new Date().toISOString()
+        });
+      }
       showToast("Jasper copywriting completed & draft archived!", "success");
     } catch (err: any) {
       setAiError(err.message || "Copy generation failed.");
@@ -820,53 +1135,51 @@ export function SuiteHub() {
   };
 
   // 8. Brevo/Sendinblue Live chat inbox states
-  const [brevoChats, setBrevoChats] = useState<BrevoMessage[]>([
-    { id: "1", sender: "customer", text: "Hi, I am looking for the enterprise license pricing details. Do you offer seasonal discounts?", time: "10:30" },
-    { id: "2", sender: "agent", text: "Hello! Thank you for reaching out. Yes, we support customizable enterprise packages starting at ₹24,999/mo depending on user seats, and offer a flat 15% discount on annual billing cycles.", time: "10:32" },
-    { id: "3", sender: "customer", text: "Great! Can you draft me a custom proposal based on 25 users with priority support features?", time: "10:35" }
-  ]);
+  const [brevoChats, setBrevoChats] = useState<BrevoMessage[]>([]);
   const [brevoInput, setBrevoInput] = useState("");
 
   const sendBrevoMessage = async () => {
-    if (!brevoInput) return;
-    const userMsg: BrevoMessage = {
-      id: Date.now().toString(),
-      sender: "agent",
-      text: brevoInput,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setBrevoChats(prev => [...prev, userMsg]);
+    if (!brevoInput || !user) return;
     const originalText = brevoInput;
     setBrevoInput("");
     
-    // Simulate smart AI support bot reply
-    setTimeout(async () => {
-      try {
-        const sysPrompt = `Act as an elite support chatbot inside the Brevo live customer engine. 
-        Your agent replied to a customer's message: "${originalText}".
-        Based on that conversation, what is a highly helpful, concise reply from the customer saying 'Thank you' or asking a follow-up about timelines or onboarding?
-        Provide a short 1-2 sentence response.`;
-        const autoReply = await AIService.generateContent(sysPrompt, {
-          systemInstruction: "Act as an active business customer. Keep replies short and realistic."
-        });
-        const custMsg: BrevoMessage = {
-          id: (Date.now() + 1).toString(),
-          sender: "customer",
-          text: autoReply,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setBrevoChats(prev => [...prev, custMsg]);
-      } catch (err) {
-        // Fallback message
-        const custMsg: BrevoMessage = {
-          id: (Date.now() + 1).toString(),
-          sender: "customer",
-          text: "Thank you for the quick support! Please send over the contract outline.",
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setBrevoChats(prev => [...prev, custMsg]);
-      }
-    }, 1500);
+    try {
+      await addDoc(collection(db, `users/${user.uid}/suitehub_brevo_chats`), {
+        sender: "agent",
+        text: originalText,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        createdAt: new Date().toISOString()
+      });
+
+      // Simulate smart AI support bot reply
+      setTimeout(async () => {
+        try {
+          const sysPrompt = `Act as an elite support chatbot inside the Brevo live customer engine. 
+          Your agent replied to a customer's message: "${originalText}".
+          Based on that conversation, what is a highly helpful, concise reply from the customer saying 'Thank you' or asking a follow-up about timelines or onboarding?
+          Provide a short 1-2 sentence response.`;
+          const autoReply = await AIService.generateContent(sysPrompt, {
+            systemInstruction: "Act as an active business customer. Keep replies short and realistic."
+          });
+          await addDoc(collection(db, `users/${user.uid}/suitehub_brevo_chats`), {
+            sender: "customer",
+            text: autoReply,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            createdAt: new Date().toISOString()
+          });
+        } catch (err) {
+          // Fallback message
+          await addDoc(collection(db, `users/${user.uid}/suitehub_brevo_chats`), {
+            sender: "customer",
+            text: "Thank you for the quick support! Please send over the contract outline.",
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            createdAt: new Date().toISOString()
+          });
+        }
+      }, 1500);
+    } catch (e) {
+      showToast("Failed to send message.", "error");
+    }
   };
 
   // 9. Ads Campaign Planner states
@@ -1157,6 +1470,27 @@ export function SuiteHub() {
                             <p className="font-mono text-xs font-bold pt-1">Lead Stage: {selectedContact.stage}</p>
                           </div>
 
+                          {/* Real App Integration actions */}
+                          <div className="p-3 bg-orange-500/5 border border-orange-500/10 rounded-xl space-y-2">
+                            <h5 className="text-[9px] uppercase font-bold text-orange-600 tracking-wider">Growth Workspace Sync</h5>
+                            <div className="flex flex-col gap-1.5">
+                              <Button 
+                                size="sm" 
+                                className="w-full h-8 text-[11px] bg-white border border-orange-500/20 text-orange-700 hover:bg-orange-500/10 font-bold justify-start"
+                                onClick={() => promoteToCoreClient(selectedContact)}
+                              >
+                                <Users className="h-3.5 w-3.5 mr-1.5 text-orange-600" /> Promote to Client Profile
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="w-full h-8 text-[11px] bg-orange-600 hover:bg-orange-700 text-white font-bold justify-start border-none"
+                                onClick={() => createCoreProjectFromLead(selectedContact)}
+                              >
+                                <Briefcase className="h-3.5 w-3.5 mr-1.5 text-white" /> Create Growth Project
+                              </Button>
+                            </div>
+                          </div>
+
                           <div className="space-y-2">
                             <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Activity History</label>
                             <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
@@ -1330,7 +1664,14 @@ export function SuiteHub() {
                                   </div>
                                 </div>
                                 <div className="flex items-center justify-between pt-1.5 border-t border-dashed">
-                                  <span className="text-[8px] uppercase font-bold text-muted-foreground">Status:</span>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="h-5 text-[9px] px-1 border-orange-500/10 hover:bg-orange-500/5 text-orange-600 gap-1 font-bold"
+                                    onClick={() => syncKeywordToTasks(k.keyword, k.difficulty)}
+                                  >
+                                    <ClipboardCheck className="h-2.5 w-2.5" /> Sync Task
+                                  </Button>
                                   <select 
                                     value={k.status} 
                                     onChange={e => updateKeywordStatus(k.id, e.target.value)}
@@ -1471,7 +1812,14 @@ export function SuiteHub() {
                                   </div>
                                 </div>
                                 <div className="flex items-center justify-between pt-1.5 border-t border-dashed">
-                                  <span className="text-[8px] uppercase font-bold text-muted-foreground">Pipeline Status:</span>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="h-5 text-[9px] px-1 border-blue-500/10 hover:bg-blue-500/5 text-blue-600 gap-1 font-bold"
+                                    onClick={() => syncOutreachToTasks(t.domain, t.contact)}
+                                  >
+                                    <Mail className="h-2.5 w-2.5" /> Sync Task
+                                  </Button>
                                   <select 
                                     value={t.status} 
                                     onChange={e => updateOutreachStatus(t.id, e.target.value)}
@@ -1665,6 +2013,9 @@ export function SuiteHub() {
                               
                               {post.status === "Scheduled" && (
                                 <div className="flex justify-end gap-1.5 pt-1 border-t">
+                                  <Button size="sm" variant="outline" className="h-6 text-[9px] px-2 border-sky-500/20 text-sky-600 hover:bg-sky-500/5 font-bold" onClick={() => syncPostToCalendar(post)}>
+                                    <CalendarRange className="h-3 w-3 mr-1" /> Sync Calendar
+                                  </Button>
                                   <Button size="sm" variant="ghost" className="h-6 text-[9px] px-2 text-rose-500" onClick={() => deleteSocialPost(post.id)}>
                                     Delete
                                   </Button>
@@ -1746,19 +2097,29 @@ export function SuiteHub() {
                        <div className="lg:col-span-7 space-y-4 text-left">
                          {mcResult ? (
                            <div className="p-5 bg-muted/30 border border-border shadow-inner rounded-xl space-y-4">
-                             <div className="flex justify-between items-center border-b pb-2">
+                             <div className="flex justify-between items-center border-b pb-2 flex-wrap gap-1.5">
                                <span className="text-xs font-bold font-mono text-amber-600 uppercase">Mailchimp Campaign Output & Email Sequence</span>
-                               <Button 
-                                 size="sm" 
-                                 variant="outline" 
-                                 className="h-6 text-[9px] border-yellow-400/55 text-yellow-600 hover:bg-yellow-400/10 px-2 shrink-0 font-bold"
-                                 onClick={() => {
-                                   navigator.clipboard.writeText(mcResult);
-                                   showToast("Newsletter Campaign content copied!", "success");
-                                 }}
-                               >
-                                 <Copy className="h-3 w-3 mr-1" /> Copy Markdown
-                               </Button>
+                               <div className="flex gap-1.5 shrink-0">
+                                 <Button 
+                                   size="sm" 
+                                   variant="outline" 
+                                   className="h-6 text-[9px] border-yellow-400/30 text-yellow-600 hover:bg-yellow-400/10 px-2 shrink-0 font-bold"
+                                   onClick={() => saveCopyAsAsset("Mailchimp Newsletter", mcResult)}
+                                 >
+                                   <FolderSync className="h-3 w-3 mr-1" /> Save to Assets
+                                 </Button>
+                                 <Button 
+                                   size="sm" 
+                                   variant="outline" 
+                                   className="h-6 text-[9px] border-yellow-400/55 text-yellow-600 hover:bg-yellow-400/10 px-2 shrink-0 font-bold"
+                                   onClick={() => {
+                                     navigator.clipboard.writeText(mcResult);
+                                     showToast("Newsletter Campaign content copied!", "success");
+                                   }}
+                                 >
+                                   <Copy className="h-3 w-3 mr-1" /> Copy Markdown
+                                 </Button>
+                               </div>
                              </div>
                              <div className="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed max-h-96 overflow-y-auto pr-1">
                                <ReactMarkdown>{mcResult}</ReactMarkdown>
@@ -2053,19 +2414,29 @@ export function SuiteHub() {
 
                         {jasperOutput && (
                           <div className="p-5 bg-muted/30 border border-border shadow-inner rounded-xl space-y-4">
-                            <div className="flex justify-between items-center border-b pb-2">
+                            <div className="flex justify-between items-center border-b pb-2 flex-wrap gap-1.5">
                               <span className="text-xs font-bold font-mono text-indigo-600 uppercase">Jasper AI Copy Assistant Output</span>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="h-6 text-[9px] border-indigo-400/55 text-indigo-600 hover:bg-indigo-400/10 px-2 shrink-0 font-bold"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(jasperOutput);
-                                  showToast("Draft copied to clipboard!", "success");
-                                }}
-                              >
-                                <Copy className="h-3 w-3 mr-1" /> Copy Draft
-                              </Button>
+                              <div className="flex gap-1.5 shrink-0">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-6 text-[9px] border-indigo-400/30 text-indigo-600 hover:bg-indigo-400/10 px-2 shrink-0 font-bold"
+                                  onClick={() => saveCopyAsAsset(`Jasper Copy (${jasperType})`, jasperOutput)}
+                                >
+                                  <FolderSync className="h-3 w-3 mr-1" /> Save to Assets
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-6 text-[9px] border-indigo-400/55 text-indigo-600 hover:bg-indigo-400/10 px-2 shrink-0 font-bold"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(jasperOutput);
+                                    showToast("Draft copied to clipboard!", "success");
+                                  }}
+                                >
+                                  <Copy className="h-3 w-3 mr-1" /> Copy Draft
+                                </Button>
+                              </div>
                             </div>
                             <div className="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed max-h-96 overflow-y-auto pr-1">
                               <ReactMarkdown>{jasperOutput}</ReactMarkdown>
