@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, User, onSnapshot, OperationType, handleFirestoreError } from './firebase';
+import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, updateDoc, User, onSnapshot, OperationType, handleFirestoreError } from './firebase';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -43,8 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Initial fetch/create
         try {
           const userDoc = await getDoc(userDocRef);
+          const isCreatorAdmin = currentUser.email === 'diwakarvishwakarma9009@gmail.com';
           if (!userDoc.exists()) {
-            const isCreatorAdmin = currentUser.email === 'diwakarvishwakarma9009@gmail.com';
             const newProfile: UserProfile = {
               uid: currentUser.uid,
               email: currentUser.email || '',
@@ -61,7 +61,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await setDoc(userDocRef, newProfile);
             setProfile(newProfile);
           } else {
-            setProfile(userDoc.data() as UserProfile);
+            const currentProfile = userDoc.data() as UserProfile;
+            if (isCreatorAdmin && (currentProfile.role !== 'admin' || currentProfile.isApproved !== true)) {
+              await updateDoc(userDocRef, {
+                role: 'admin',
+                isApproved: true
+              });
+              currentProfile.role = 'admin';
+              currentProfile.isApproved = true;
+            }
+            setProfile(currentProfile);
           }
         } catch (error) {
           handleFirestoreError(error, OperationType.GET, `users/${currentUser.uid}`);
