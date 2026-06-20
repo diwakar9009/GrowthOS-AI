@@ -163,21 +163,21 @@ export function AdminUsers() {
 
   // Calculate metrics
   const totalUsersCount = users.length;
-  const approvedUsersCount = users.filter(u => u.isApproved).length;
-  const pendingUsersCount = users.filter(u => !u.isApproved).length;
-  const adminUsersCount = users.filter(u => u.role === 'admin').length;
+  const approvedUsersCount = users.filter(u => u.isApproved || u.email === 'diwakarvishwakarma9009@gmail.com').length;
+  const pendingUsersCount = users.filter(u => !u.isApproved && u.email !== 'diwakarvishwakarma9009@gmail.com').length;
+  const adminUsersCount = users.filter(u => u.role === 'admin' || u.email === 'diwakarvishwakarma9009@gmail.com').length;
 
   // Filter list
   const filteredUsers = users.filter(u => {
     const matchesSearch = 
-      u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      u.email.toLowerCase().includes(searchQuery.toLowerCase());
+      u.displayName && (u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      u.email.toLowerCase().includes(searchQuery.toLowerCase()));
     
     if (!matchesSearch) return false;
 
-    if (filterType === 'approved') return u.isApproved === true;
-    if (filterType === 'pending') return !u.isApproved;
-    if (filterType === 'admin') return u.role === 'admin';
+    if (filterType === 'approved') return u.isApproved === true || u.email === 'diwakarvishwakarma9009@gmail.com';
+    if (filterType === 'pending') return !u.isApproved && u.email !== 'diwakarvishwakarma9009@gmail.com';
+    if (filterType === 'admin') return u.role === 'admin' || u.email === 'diwakarvishwakarma9009@gmail.com';
     return true;
   });
 
@@ -364,7 +364,7 @@ export function AdminUsers() {
                         {/* Security Role */}
                         <td className="px-6 py-4">
                           <div className="flex flex-col items-start gap-1">
-                            {targetUser.role === 'admin' ? (
+                            {(targetUser.role === 'admin' || isRootAdmin) ? (
                               <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-1 text-xs font-semibold text-violet-500">
                                 <ShieldCheck className="h-3.5 w-3.5" />
                                 Admin
@@ -389,7 +389,7 @@ export function AdminUsers() {
 
                         {/* AI Tool Access approved status */}
                         <td className="px-6 py-4">
-                          {targetUser.isApproved ? (
+                          {(targetUser.isApproved || isRootAdmin) ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-500">
                               <UserCheck2 className="h-3.5 w-3.5" />
                               Approved (Active)
