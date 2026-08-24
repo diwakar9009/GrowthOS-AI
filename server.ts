@@ -17,8 +17,14 @@ process.on("unhandledRejection", (reason, promise) => {
   console.error("Resilient Server: Unhandled Rejection at:", promise, "reason:", reason);
 });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Safe CJS / ESM cross-compatible path resolution
+const currentFilePath = typeof import.meta !== "undefined" && import.meta.url 
+  ? fileURLToPath(import.meta.url) 
+  : __filename;
+
+const __dirnameResolved = typeof import.meta !== "undefined" && import.meta.url 
+  ? path.dirname(currentFilePath) 
+  : __dirname;
 
 // Helper to verify Firebase ID Token and check Firestore approval status
 async function verifyUserApproval(authHeader?: string): Promise<{ uid: string; email: string; isApproved: boolean }> {
